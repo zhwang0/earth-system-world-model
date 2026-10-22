@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://zhwang0.github.io/earth-system-world-model/sitemap.xml

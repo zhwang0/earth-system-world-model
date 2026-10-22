@@ -1,0 +1,42 @@
+name: Deploy Earth System World Model website
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out website
+        uses: actions/checkout@v6
+      - name: Collect the page's files
+        # only what the page serves is published, nothing else in the repository
+        run: |
+          mkdir _site
+          cp -r index.html tests.html css js assets robots.txt sitemap.xml _site/
+          touch _site/.nojekyll
+      - name: Validate pages and data assets
+        run: python3 scripts/validate_site.py _site
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload static website
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

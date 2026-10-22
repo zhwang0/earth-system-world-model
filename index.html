@@ -1,0 +1,601 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Earth System World Model — What-If Simulations for Terrestrial Ecosystems</title>
+<meta name="description" content="An action-conditioned world model for Earth-system emulation. Edit a forest's structure in any year and watch the coupled ecosystem respond — the model from the SIGSPATIAL '26 paper, running live in your browser.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Earth System World Model for What-If Simulations">
+<meta property="og:description" content="A passive emulator predicts. A world model answers what-if. Edit a forest, watch the carbon cycle respond — live in your browser.">
+<meta property="og:url" content="https://zhwang0.github.io/earth-system-world-model/">
+<meta property="og:image" content="https://zhwang0.github.io/earth-system-world-model/assets/img/fig1_overview.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<a class="skip" href="#lab">Skip to the interactive model</a>
+
+<header class="nav" id="nav">
+  <a class="nav-mark" href="#top"><span class="mark" aria-hidden="true"></span> Earth System World Model</a>
+  <nav class="nav-links">
+    <a href="#why">Why</a>
+    <a href="#film">Amazon</a>
+    <a href="#method">Method</a>
+    <a href="#lab">Lab</a>
+    <a href="#accuracy">Accuracy</a>
+    <a href="#limits">Limits</a>
+    <a href="#cite">Cite</a>
+  </nav>
+  <a class="btn btn-sm" href="https://arxiv.org/abs/2609.08855">Paper</a>
+</header>
+
+<!-- ───────────────────────────────────────────────────────────── hero -->
+<section class="hero" id="top">
+  <canvas id="globe-canvas" aria-hidden="true"></canvas>
+  <div class="hero-grad" aria-hidden="true"></div>
+
+  <div class="hero-inner">
+    <p class="eyebrow">ACM SIGSPATIAL 2026 · Riverside, CA</p>
+    <h1>
+      A forecast tells you what <em>will</em> happen.<br>
+      A world model answers <em>what if</em>.
+    </h1>
+    <p class="lede">
+      Machine-learning emulators have made Earth-system simulation fast, but they stay passive:
+      they replay a trajectory under prescribed forcings with no way to intervene. We train an
+      emulator that accepts <strong>actions</strong> — and the whole coupled ecosystem responds.
+    </p>
+
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="#lab">Open the live model</a>
+      <a class="btn" href="https://arxiv.org/abs/2609.08855">Read the paper</a>
+    </div>
+
+    <p class="hero-note" id="boot-note">
+      <span class="dot" aria-hidden="true"></span>
+      <span id="boot-text">Loading the model…</span>
+    </p>
+  </div>
+
+  <div class="hero-authors">
+    <p>
+      <a href="https://arxiv.org/abs/2609.08855">Earth System World Model for What-If Simulations:
+      A Case Study for Terrestrial Ecosystems</a>
+    </p>
+    <p class="authors">
+      Zhihao Wang<sup>1</sup>, Ruichen Wang<sup>1</sup>, Ruohan Li<sup>1</sup>, Lei Ma<sup>1</sup>,
+      George Hurtt<sup>1</sup>, Xiaowei Jia<sup>2</sup>, Gengchen Mai<sup>3</sup>,
+      Shaowen Wang<sup>4</sup>, Yiqun Xie<sup>1</sup>
+    </p>
+    <p class="affil">
+      <sup>1</sup>University of Maryland · <sup>2</sup>Rutgers University ·
+      <sup>3</sup>UT Austin · <sup>4</sup>UIUC
+    </p>
+  </div>
+</section>
+
+<!-- ───────────────────────────────────────────────────────────── why -->
+<section class="band" id="why">
+  <div class="wrap">
+    <p class="kicker">The gap</p>
+    <h2 class="statement">
+      Emulators reproduce the simulator. They offer
+      <em>no mechanism</em> to ask what happens if you change the forest itself.
+    </h2>
+
+    <div class="cols-2">
+      <div>
+        <p>
+          Process-based Earth-system models are expensive, so the field has learned to emulate
+          them with neural networks. Those emulators are fast and accurate — and inert. Given
+          climate forcing and an initial state they replay a trajectory, but there is no input
+          for <em>logging</em>, <em>wildfire</em>, <em>replanting</em>, or a management policy.
+        </p>
+        <p>
+          The paper draws the analogy to early video generators: high-fidelity pixel streams with
+          nothing to interact with. What a digital twin needs is the other thing — a model you
+          can intervene on, that answers coherently across every coupled variable.
+        </p>
+      </div>
+      <div>
+        <p>
+          The obstacle is supervision. Game and robotics world models learn from logged actions;
+          Earth-system simulator runs contain no action labels at all. Nobody recorded "a human
+          thinned this stand in 1997", because nobody did.
+        </p>
+        <p>
+          The paper's move is to notice that <strong>every observed transition already is an
+          action</strong>. If canopy height went up 0.4 m this year, treat that as a +0.4 m
+          action and learn the mapping. Label-free supervision, from data that already exists.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────────────────────────────────────────── film -->
+<section class="band band-film" id="film">
+  <div class="wrap">
+    <p class="kicker">Forty years over the Amazon</p>
+    <h2>This is what the model learns from</h2>
+    <p class="section-lede">
+      A young stand, simulated forward from 1981 to 2021 across the Amazon basin by the Ecosystem
+      Demography model. Every frame is real simulator output at 0.5°, the same runs the world
+      model is trained on — the canopy mean rises from 3.5 m to 24 m. No model predictions here
+      yet; those come next.
+    </p>
+
+    <div class="film">
+      <div class="film-stage">
+        <canvas id="film-canvas" aria-label="Animated map of simulated canopy height over the Amazon basin, 1981 to 2021"></canvas>
+        <div class="film-hud">
+          <p class="film-year" id="film-year">1981</p>
+          <p class="film-stat">mean canopy <b id="film-mean">3.5 m</b></p>
+        </div>
+        <div class="film-scale" aria-hidden="true">
+          <span>0 m</span><i class="film-ramp"></i><span>35 m</span>
+        </div>
+      </div>
+
+      <aside class="film-side">
+        <svg id="film-chart" viewBox="0 0 300 120" role="img"
+             aria-label="Mean simulated canopy height across the Amazon window, 1981 to 2021"></svg>
+        <p class="film-note">
+          Mean canopy height across the <b id="film-cells">2,902</b> simulated cells in view.
+          Growth is fastest in the first two decades and flattens as the stand closes.
+        </p>
+        <div class="film-controls">
+          <button class="btn btn-sm" id="film-play" aria-label="Pause the time-lapse">Pause</button>
+          <input type="range" id="film-scrub" min="0" max="40" value="0" step="1"
+                 aria-label="Scrub through the years 1981 to 2021">
+        </div>
+        <p class="fine">
+          Simulation only. <a href="#lab">The lab below</a> is where you intervene and the world
+          model answers.
+        </p>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────────────────────────────────────────── method -->
+<section class="band band-alt" id="method">
+  <div class="wrap">
+    <p class="kicker">Method</p>
+    <h2>Three ideas, one model</h2>
+
+    <figure class="fig fig-wide">
+      <img src="assets/img/fig1_overview.png" alt="Overview of the action-conditioned world-modelling framework: forcing, system state and an optional user action enter an encoder; an action gate selects either the encoded action or a natural-dynamics head; non-height variables are masked; the decoder produces either a prescribed rollout or an action-conditioned response." loading="lazy">
+      <figcaption>
+        <strong>Figure 1 (from the paper).</strong> Overview of the proposed action-conditioned
+        world-modeling framework for extending passive Earth-system emulators with controllable
+        state edits, transition-action pretraining, and masked response inference.
+      </figcaption>
+    </figure>
+
+    <div class="steps">
+      <article class="step">
+        <p class="step-n">01</p>
+        <h3>Transition-action pretraining</h3>
+        <p>
+          Every state change becomes its own action label. For the controlled variable — here
+          canopy height — the action is simply the observed change:
+        </p>
+        <p class="eq">a<sub>t</sub><sup>S</sup> = y<sub>t+1</sub><sup>S</sup> − y<sub>t</sub><sup>S</sup></p>
+        <p>
+          A positive action is accelerated structural growth; a negative one is a structural
+          reduction such as harvest or disturbance. No annotation required.
+        </p>
+      </article>
+
+      <article class="step">
+        <p class="step-n">02</p>
+        <h3>An action gate</h3>
+        <p>
+          One model, two modes. With no action, a natural-dynamics head predicts the height
+          increment and the model behaves as an ordinary emulator. With an action, the encoded
+          action takes over:
+        </p>
+        <p class="eq">
+          ĥ<sub>t+1</sub> = h<sub>t</sub> + D<sub>h</sub>(Δĥ<sub>t</sub>) &nbsp;·&nbsp; no action<br>
+          ĥ<sub>t+1</sub> = h<sub>t</sub> + D<sub>h</sub>(â<sub>t</sub>) &nbsp;·&nbsp; action given
+        </p>
+        <p>
+          The gate is what stops the network from ignoring the action — and from losing the
+          ability to predict when none is given.
+        </p>
+      </article>
+
+      <article class="step">
+        <p class="step-n">03</p>
+        <h3>Masked response learning</h3>
+        <p>
+          When you edit one variable, the others are out of date. So during action-conditioned
+          training the non-height variables at the edited step are masked out, forcing the model
+          to <em>infer</em> the coupled response:
+        </p>
+        <p class="eq">ŷ<sub>t+1</sub><sup>−h</sup> = g<sub>θ</sub>(z<sub>t</sub>, ĥ<sub>t+1</sub>)</p>
+        <p>
+          Biomass, soil carbon and the fluxes are reconstructed from the latent state and the new
+          height alone — exactly the situation at inference time.
+        </p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────────────────────────────────────────── the lab -->
+<section class="band band-lab" id="lab">
+  <div class="wrap">
+    <p class="kicker">The model, live</p>
+    <h2>Intervene on a forest</h2>
+    <p class="section-lede">
+      Everything below is computed in your browser by the paper's model — 519,047 parameters
+      reproducing the PyTorch original to six decimal places. Nothing here is a precomputed
+      animation. Pick a site, disturb it, and watch the coupled response.
+    </p>
+
+    <div class="lab" id="lab-root" data-state="loading">
+
+      <!-- ── site picker -->
+      <div class="lab-bar">
+        <div class="field">
+          <label for="sel-cell">Site</label>
+          <select id="sel-cell"></select>
+        </div>
+        <div class="field">
+          <label for="sel-age">Stand age</label>
+          <select id="sel-age">
+            <option value="1">Young · 1 yr</option>
+            <option value="150" selected>Intermediate · 150 yr</option>
+            <option value="300">Mature · 300 yr</option>
+          </select>
+        </div>
+        <div class="field field-grow">
+          <label>Location</label>
+          <p class="readout" id="cell-readout">—</p>
+        </div>
+        <button class="btn btn-sm" id="btn-random">Surprise me</button>
+      </div>
+
+      <p class="warn" id="extrap-warn" hidden>
+        <strong>Outside the training regions.</strong> The model was trained and tested on 203
+        cells in six study regions. This site is not one of them, so its prediction is
+        extrapolation — interesting to explore, not a validated result.
+      </p>
+
+      <!-- ── mode tabs -->
+      <div class="tabs" role="tablist">
+        <button role="tab" class="tab is-on" data-mode="disturb" aria-selected="true">Disturb it</button>
+        <button role="tab" class="tab" data-mode="manage" aria-selected="false">Draw a policy</button>
+        <button role="tab" class="tab" data-mode="target" aria-selected="false">Set a target</button>
+      </div>
+
+      <div class="lab-body">
+        <!-- ── controls -->
+        <aside class="lab-controls">
+
+          <div class="panel" data-for="disturb">
+            <h3>A single event</h3>
+            <p class="hint">
+              Change canopy height in one year, the way a harvest or a blowdown would, and let
+              the model carry the consequences forward.
+            </p>
+            <div class="ctl">
+              <label for="rng-year">Year <output id="out-year">2001</output></label>
+              <input type="range" id="rng-year" min="5" max="40" value="20" step="1">
+            </div>
+            <div class="ctl">
+              <label for="rng-mag">Height change <output id="out-mag">−2.0 m</output></label>
+              <input type="range" id="rng-mag" min="-8" max="5" value="-2" step="0.1">
+              <p class="zone" id="zone-note"></p>
+            </div>
+            <div class="presets">
+              <button class="chip" data-preset="clearcut">Heavy harvest</button>
+              <button class="chip" data-preset="thin">Light thinning</button>
+              <button class="chip" data-preset="boost">Growth boost</button>
+              <button class="chip" data-preset="none">Reset</button>
+            </div>
+          </div>
+
+          <div class="panel" data-for="manage" hidden>
+            <h3>A yearly schedule</h3>
+            <p class="hint">
+              Drag across the strip to write an action into every year — a management programme
+              rather than one event. Grey is no action: the model grows the stand itself.
+            </p>
+            <div class="sched" id="sched"></div>
+            <div class="presets">
+              <button class="chip" data-preset="ramp">Steady release</button>
+              <button class="chip" data-preset="rotation">Harvest rotation</button>
+              <button class="chip" data-preset="none">Clear</button>
+            </div>
+          </div>
+
+          <div class="panel" data-for="target" hidden>
+            <h3>Work backwards</h3>
+            <p class="hint">
+              Name an outcome for 2021 and the model solves for the yearly actions that reach
+              it — or tells you the site cannot get there.
+            </p>
+            <div class="ctl">
+              <label for="sel-band">Outcome</label>
+              <select id="sel-band">
+                <option value="0">Canopy height</option>
+                <option value="1" selected>Aboveground biomass</option>
+                <option value="2">Soil carbon</option>
+              </select>
+            </div>
+            <div class="ctl">
+              <label for="rng-target">Target in 2021 <output id="out-target">—</output></label>
+              <input type="range" id="rng-target" min="0" max="100" value="60" step="1">
+            </div>
+            <div class="verdict" id="verdict"></div>
+          </div>
+
+          <div class="legend">
+            <p><span class="sw sw-ed"></span> ED simulation (the ground truth)</p>
+            <p><span class="sw sw-free"></span> Model, no action</p>
+            <p><span class="sw sw-act"></span> Model, your intervention</p>
+          </div>
+        </aside>
+
+        <!-- ── charts -->
+        <div class="lab-charts" id="charts">
+          <div class="chart-grid" id="chart-grid"></div>
+          <p class="compute" id="compute-note"></p>
+        </div>
+      </div>
+    </div>
+
+    <details class="disclose">
+      <summary>What exactly is being computed here?</summary>
+      <div class="disclose-body">
+        <p>
+          The page downloads the trained weights for your chosen stand age and runs a 40-year
+          autoregressive rollout in a background thread, seeded by the first five years of the ED
+          simulation and driven by that site's real historical climate (1981–2021). An action is
+          a change in canopy height, in metres, applied in a chosen year; the model's gate
+          substitutes it for its own growth prediction and the decoder infers the other six
+          variables from the latent state and the new height.
+        </p>
+        <p>
+          <strong>Every value is a December value.</strong> The model reads and predicts the state
+          of each December, which is what the stocks — height, biomass, soil carbon — are
+          naturally measured as. For leaf area and the three carbon fluxes it matters more: those
+          are instantaneous rates, so at a seasonal forest December is midwinter rather than the
+          annual mean. At the eastern North America cells, December gross primary production is
+          around 0.16 kgC m⁻² yr⁻¹ against an annual mean near 1.94. Those four charts are marked
+          <em>Dec</em>.
+        </p>
+        <p>
+          <strong>An action is not a direct edit.</strong> The height change the model applies
+          passes through a learned decoder, so asking for −2.0 m produces about −2.05 m. And
+          <strong>the model does not recover</strong>: after a disturbance it carries the
+          difference forward rather than converging back to the undisturbed trajectory.
+        </p>
+        <p>
+          Actions are reported against the range the model actually saw in training — ED's own
+          yearly height changes across the 203 study cells. Inside that range you are asking a
+          fair question; outside it you are extrapolating, and the interface says so.
+        </p>
+        <p>
+          Don't take our word for it: <a href="tests.html">run the self-check</a>. It replays
+          rollouts stored from the original PyTorch model and reports the error your browser
+          actually achieves.
+        </p>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- ───────────────────────────────────────────────────────────── accuracy -->
+<section class="band" id="accuracy">
+  <div class="wrap">
+    <p class="kicker">Does controllability cost accuracy?</p>
+    <h2>No — it is competitive with a dedicated emulator</h2>
+    <p class="section-lede">
+      Rollout mean rRMSE over a 40-year autoregressive rollout at held-out cells, averaged over
+      the seven state variables. Lower is better.
+    </p>
+
+    <div class="table-scroll">
+      <table class="tbl">
+        <caption>Table 1 (from the paper). Rollout mean rRMSE across 3 forest conditions.</caption>
+        <thead>
+          <tr>
+            <th scope="col">Model</th>
+            <th scope="col" colspan="3">All time steps</th>
+            <th scope="col" colspan="3">Final time step</th>
+          </tr>
+          <tr class="sub">
+            <th scope="col"></th>
+            <th scope="col">Young</th><th scope="col">Inter.</th><th scope="col">Mature</th>
+            <th scope="col">Young</th><th scope="col">Inter.</th><th scope="col">Mature</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Persistence</th>
+            <td>0.710</td><td>0.295</td><td>0.302</td>
+            <td>1.124</td><td>0.376</td><td>0.347</td>
+          </tr>
+          <tr>
+            <th scope="row">Baseline emulator</th>
+            <td>0.180</td><td>0.211</td><td><b>0.216</b></td>
+            <td>0.207</td><td>0.217</td><td><b>0.242</b></td>
+          </tr>
+          <tr class="hi">
+            <th scope="row">World Model</th>
+            <td><b>0.162</b></td><td><b>0.189</b></td><td>0.221</td>
+            <td><b>0.202</b></td><td><b>0.205</b></td><td>0.246</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="fine">
+      The World Model is better than the dedicated baseline emulator at the young and
+      intermediate ages, within 0.005 of it at the mature age, and ahead of persistence
+      everywhere. Adding controllability did not cost prescribed-emulation accuracy.
+    </p>
+
+    <div class="fig-pair">
+      <figure class="fig">
+        <img src="assets/img/fig2_study_area.png" alt="World map with six red boxes marking the study areas: eastern North America, northwestern South America, central Africa, eastern China, Europe and eastern Australia." loading="lazy">
+        <figcaption><strong>Figure 2 (from the paper).</strong> Study areas over six continents.</figcaption>
+      </figure>
+      <figure class="fig">
+        <img src="assets/img/fig3_action_responses.png" alt="Six panels: canopy height (top row) and aboveground biomass (bottom row) under 0, -1, -2 and -5 percent height actions for young, intermediate and mature stands, with insets zooming on years 30 to 40." loading="lazy">
+        <figcaption>
+          <strong>Figure 3 (from the paper).</strong> Action-conditioned responses under perturbed
+          height actions (top: height; bottom: aboveground biomass).
+        </figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────────────────────────────────────────── limits -->
+<section class="band band-alt" id="limits">
+  <div class="wrap">
+    <p class="kicker">Honest limits</p>
+    <h2>What this model does not do</h2>
+    <p class="section-lede">
+      The paper calls itself an exploratory step, and the demo above is built to show the edges
+      rather than hide them.
+    </p>
+
+    <div class="limits">
+      <article>
+        <h3>It does not recover</h3>
+        <p>
+          After a disturbance the model carries the height difference forward indefinitely.
+          A real stand regrows; this one holds its loss to year 40. Treat trajectories after a
+          large intervention as a shifted baseline, not a recovery curve.
+        </p>
+      </article>
+      <article>
+        <h3>Mature forests barely respond</h3>
+        <p>
+          At 150 and 300 years a ±5% change in yearly growth moves canopy height by well under a
+          metre by year 40, and biomass hardly at all. That is consistent with slow structural
+          change near maturity — and it means the mature ages are the least interesting to poke.
+        </p>
+      </article>
+      <article>
+        <h3>One controlled variable</h3>
+        <p>
+          Only canopy height can be edited. Everything else is inferred. You cannot directly set
+          soil carbon or impose a drought; forcings are the historical record, 1981–2021.
+        </p>
+      </article>
+      <article>
+        <h3>Six regions, not the globe</h3>
+        <p>
+          Training and evaluation used 203 cells across six regions. The globe lets you visit
+          other forests because it is informative to see, but those runs are extrapolation and
+          are labelled as such.
+        </p>
+      </article>
+      <article>
+        <h3>It can disagree with the simulator</h3>
+        <p>
+          At some sites ED's own canopy rises while its biomass falls — climate-driven fire that
+          burns biomass while the tallest trees survive. The emulator does not reproduce that
+          pattern everywhere. Where the ED line and the model line diverge, the chart shows it.
+        </p>
+      </article>
+      <article>
+        <h3>A learned surrogate, not advice</h3>
+        <p>
+          The target solver inverts a neural emulator. It is a way to interrogate what the model
+          has learned about structure and carbon — not a forestry prescription, a yield
+          projection, or a policy instrument.
+        </p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────────────────────────────────────────── cite -->
+<section class="band" id="cite">
+  <div class="wrap">
+    <p class="kicker">Cite</p>
+    <h2>Paper and data</h2>
+
+    <div class="cols-2">
+      <div>
+        <h3 class="h-sm">The paper</h3>
+        <p class="cite-title">
+          Earth System World Model for What-If Simulations: A Case Study for Terrestrial
+          Ecosystems
+        </p>
+        <p class="cite-meta">
+          Zhihao Wang, Ruichen Wang, Ruohan Li, Lei Ma, George Hurtt, Xiaowei Jia, Gengchen Mai,
+          Shaowen Wang, Yiqun Xie.<br>
+          Proceedings of the 34th ACM International Conference on Advances in Geographic
+          Information Systems (SIGSPATIAL '26), Riverside, CA, USA.
+        </p>
+        <p class="links">
+          <a class="btn btn-sm" href="https://arxiv.org/abs/2609.08855">arXiv:2609.08855</a>
+          <a class="btn btn-sm" href="https://doi.org/10.1145/3841645.3843371">doi:10.1145/3841645.3843371</a>
+        </p>
+
+        <h3 class="h-sm">The data</h3>
+        <p>
+          Every simulation here comes from <strong>CarbonGlobe</strong>, a global multi-decade
+          forest-carbon dataset generated with the Ecosystem Demography model (ED v3.0) on a 0.5°
+          grid with historical forcing for 1981–2021.
+        </p>
+        <p class="links">
+          <a class="btn btn-sm" href="https://zhwang0.github.io/carbon-globe-website/">CarbonGlobe project</a>
+          <a class="btn btn-sm" href="https://github.com/zhwang0/carbon-globe">Dataset &amp; code</a>
+        </p>
+      </div>
+
+      <div>
+        <h3 class="h-sm">BibTeX</h3>
+        <pre class="bib"><code>@inproceedings{wang2026earth,
+  title     = {Earth System World Model for What-If Simulations:
+               A Case Study for Terrestrial Ecosystems},
+  author    = {Wang, Zhihao and Wang, Ruichen and Li, Ruohan and
+               Ma, Lei and Hurtt, George and Jia, Xiaowei and
+               Mai, Gengchen and Wang, Shaowen and Xie, Yiqun},
+  booktitle = {Proceedings of the 34th ACM International Conference
+               on Advances in Geographic Information Systems
+               (SIGSPATIAL '26)},
+  year      = {2026},
+  address   = {Riverside, CA, USA},
+  publisher = {ACM},
+  doi       = {10.1145/3841645.3843371}
+}</code></pre>
+        <button class="btn btn-sm" id="btn-copy-bib">Copy BibTeX</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="foot">
+  <div class="wrap">
+    <p>
+      <strong>Earth System World Model</strong> · University of Maryland, Rutgers University,
+      UT Austin, UIUC. Paper licensed CC BY 4.0.
+    </p>
+    <p class="fine">
+      Simulations: Ecosystem Demography (ED) model, University of Maryland, via the CarbonGlobe
+      dataset. Earth imagery: NASA Blue Marble Next Generation and Black Marble, public domain.
+      three.js (MIT). The interactive model runs entirely in your browser; nothing you do here is
+      sent anywhere.
+    </p>
+  </div>
+</footer>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

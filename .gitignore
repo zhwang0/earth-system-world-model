@@ -1,0 +1,33 @@
+__pycache__/
+*.pyc
+.DS_Store
+.venv/
+node_modules/
+.env
+.env.*
+
+# Local only, never published: working notes, the export/build scripts (all but the
+# validator the deploy runs) and the staging copy the workflow assembles
+/NOTES.md
+/_work/
+/_site/
+/scripts/*
+!/scripts/validate_site.py
+
+# No dataset arrays, rasters or training checkpoints in the repository.
+# The site's own payloads under assets/ are re-allowed below -- they ARE the page.
+*.csv
+*.npy
+*.npz
+*.nc
+*.h5
+*.hdf5
+*.parquet
+*.pt
+*.pth
+*.ckpt
+*.bin
+
+# ...except the exported model weights and the forest-cell chunks the browser fetches
+!/assets/model/*.bin
+!/assets/cells/*.bin
