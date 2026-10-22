@@ -866,27 +866,6 @@ input[type="range"]:focus-visible::-moz-range-thumb {
 .zone:empty { display: none; }
 .zone[data-zone="rare"], .zone[data-zone="extrapolation"] { color: var(--warn); }
 
-/* presets */
-.presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--s-5); }
-.chip {
-  padding: 7px 13px;
-  border: 1px solid var(--line-2);
-  border-radius: var(--r-pill);
-  background: var(--surface);
-  color: var(--ink-2);
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  line-height: 1.2;
-  white-space: nowrap;
-  transition: background var(--t-2), border-color var(--t-2), color var(--t-2);
-}
-.chip:hover { background: var(--hover); border-color: var(--ink-3); color: var(--ink); }
-.chip.is-on, .chip[aria-pressed="true"] {
-  background: var(--accent-soft);
-  border-color: var(--accent-line);
-  color: var(--accent);
-}
-
 /* ------------------------------------------------------------------ schedule strip */
 /* JS fills this with 36 children (years 5-40). Each child carries a magnitude
    in --v (unitless 0-1) plus .pos / .neg / .zero, optional [data-zone]. */
@@ -1029,7 +1008,7 @@ input[type="range"]:focus-visible::-moz-range-thumb {
 }
 .series.ed   { stroke: var(--c-ed);   stroke-width: 1.75; stroke-dasharray: 5 4; }
 .series.free { stroke: var(--c-free); stroke-width: 2; }
-.series.scn  { stroke: var(--c-act);  stroke-width: 2.75; }
+.series.act  { stroke: var(--c-act);  stroke-width: 2.75; }
 .band-fill   { fill: var(--c-act); fill-opacity: .13; stroke: none; }
 .cursor      { stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 3 3; fill: none; }
 .dot-mark    { fill: var(--c-act); stroke: var(--chart-bg); stroke-width: 2; }
@@ -1509,6 +1488,18 @@ input[type="range"]:focus-visible::-moz-range-thumb {
 /* ─────────────────────────────── the answer */
 
 .answer { padding: var(--s-3) var(--s-6) var(--s-6); }
+
+/* which line is which */
+.key {
+  display: flex; flex-wrap: wrap; justify-content: flex-end;
+  gap: .35rem 1.25rem;
+  margin: 0 0 var(--s-3);
+  font-size: var(--fs-xs);
+  color: var(--ink-3);
+}
+.key span { display: inline-flex; align-items: center; gap: .5rem; }
+.key span[hidden] { display: none; }
+.key .sw { width: 20px; }
 .chart-pair {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1540,7 +1531,7 @@ input[type="range"]:focus-visible::-moz-range-thumb {
 .chip-s { width: 100%; height: 22px; display: block; }
 .chip-s .series { fill: none; stroke-linejoin: round; stroke-linecap: round; }
 .chip-s .series.free { stroke: var(--ink-3); stroke-width: 1.3; opacity: .55; }
-.chip-s .series.scn { stroke: var(--c-act); stroke-width: 1.8; }
+.chip-s .series.act { stroke: var(--c-act); stroke-width: 1.8; }
 .chip-d {
   margin: 0;
   font: 500 var(--fs-sm)/1.1 var(--mono);
@@ -1631,4 +1622,6 @@ input[type="range"]:focus-visible::-moz-range-thumb {
   .lab-bar { padding: var(--s-5); }
   .when, .goal { grid-template-columns: minmax(0, 1fr); }
   .when-span { grid-column: 1; }
+  /* the chart scales down with its viewBox; keep the axis labels legible */
+  .chart .lbl { font-size: 14px; }
 }

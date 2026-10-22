@@ -213,6 +213,7 @@ export class Lab {
   }
 
   _draw(act, markYear) {
+    this.$('#key-act').hidden = !act;
     for (const c of this.charts) {
       c.update({
         ed: this.ed ? pick(this.ed, c.band) : null,

@@ -45,6 +45,13 @@ function ticks(lo, hi, n = 4) {
   return out;
 }
 
+/** Decimals that print every multiple of `step` exactly: 20 -> 0, 2.5 -> 1, 0.25 -> 2. */
+function decimals(step) {
+  let d = 0;
+  while (d < 4 && Math.abs(step * 10 ** d - Math.round(step * 10 ** d)) > 1e-6 * 10 ** d) d++;
+  return d;
+}
+
 function extent(series) {
   let lo = Infinity, hi = -Infinity;
   for (const s of series) {
@@ -108,11 +115,13 @@ export class Chart {
     const g = el('g');
     svg.append(g);
 
-    for (const t of ticks(lo, hi)) {
+    const tk = ticks(lo, hi);
+    const dec = decimals(tk.length > 1 ? tk[1] - tk[0] : 1);
+    for (const t of tk) {
       const y = this._y(t, lo, hi);
       g.append(el('line', { class: 'gridline', x1: this.m.l, x2: this.W - this.m.r, y1: y, y2: y }));
       const tx = el('text', { class: 'lbl lbl-y', x: this.m.l - 7, y: y + 3.5, 'text-anchor': 'end' });
-      tx.textContent = fmt(t);
+      tx.textContent = (Math.abs(t) < 1e-9 ? 0 : t).toFixed(dec);
       g.append(tx);
     }
     for (const yr of [0, 10, 20, 30, 40]) {
