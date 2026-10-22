@@ -149,6 +149,7 @@ export class WorldModel {
         climB: new Float32Array(B * N_CLIM * D_CLIM),   // clim_enc layer 2 -> the embedding
         tok: new Float32Array(B * TOK),
         gi: new Float32Array(B * 3 * D_HID),
+        giYear: new Float32Array(N_CLIM * B * 3 * D_HID),   // each year's GRU input projection
         gh: new Float32Array(B * 3 * D_HID),
         hid: new Float32Array(B * D_HID),
         actVec: new Float32Array(B * D_ACT),
@@ -220,47 +221,69 @@ export class WorldModel {
 
     const hasAct = new Uint8Array(B);
     const actN = new Float32Array(B);
+    const G3 = 3 * D_HID;
+
+    // ---- the 158-dim token of year `yr` for every item in the batch; `mask` = last step of an
+    // action year, where the action's items hide their non-height state
+    const assemble = (yr, mask) => {
+      const ageV = (this.ageVal + yr) / AGE_SCALE;
+      for (let b = 0; b < B; b++) {
+        const o = b * TOK;
+        const er = (shared ? yr : b * N_CLIM + yr) * D_CLIM;
+        s.tok.set(emb.subarray(er, er + D_CLIM), o);
+        const sb = (b * N_YR + yr) * N_BAND;
+        const masked = mask && hasAct[b];
+        s.tok[o + D_CLIM] = st[sb];                         // height is always kept
+        for (let k = 1; k < N_BAND; k++) {
+          s.tok[o + D_CLIM + k] = masked ? 0 : st[sb + k];  // masked response learning
+        }
+        s.tok[o + D_CLIM + 7] = ageV;
+        s.tok[o + D_CLIM + 8] = masked ? 1 : 0;             // maskflag / "an action is given here"
+        const g = b * 21;
+        for (let k = 0; k < 21; k++) s.tok[o + D_CLIM + 9 + k] = glob[g + k];
+      }
+    };
+
+    // The GRU re-reads the last L years for every target year, but a year's token is the same in
+    // every window that contains it, unless it is the masked last step of an action year. So each
+    // year's input projection is computed once and reused, and only masked steps are projected
+    // afresh: the same arithmetic on the same inputs, bit-identical, ~30% less work.
+    const giDone = new Uint8Array(N_CLIM);
 
     for (let ty = L; ty < N_YR; ty++) {
+      let anyAct = false;
       for (let b = 0; b < B; b++) {
         const a = acts ? acts[b * N_YR + ty] : NaN;
         const on = acts != null && a === a;                  // a === a is false for NaN
         hasAct[b] = on ? 1 : 0;
         actN[b] = on ? a / this.hStd : 0;
+        if (on) anyAct = true;
       }
 
       s.hid.fill(0);                                          // GRU h_0 = 0
       for (let t = 0; t < L; t++) {
         const yr = ty - L + t;
-        const isLast = t === L - 1;
-        const ageV = (this.ageVal + yr) / AGE_SCALE;
-
-        // ---- assemble the 158-dim token for every item in the batch
-        for (let b = 0; b < B; b++) {
-          const o = b * TOK;
-          const er = (shared ? yr : b * N_CLIM + yr) * D_CLIM;
-          s.tok.set(emb.subarray(er, er + D_CLIM), o);
-          const sb = (b * N_YR + yr) * N_BAND;
-          const masked = isLast && hasAct[b];
-          s.tok[o + D_CLIM] = st[sb];                         // height is always kept
-          for (let k = 1; k < N_BAND; k++) {
-            s.tok[o + D_CLIM + k] = masked ? 0 : st[sb + k];  // masked response learning
+        let gi;
+        if (t === L - 1 && anyAct) {
+          assemble(yr, true);
+          gi = linear4(s.tok, B, TOK, P['gru.weight_ih_l0'], P['gru.bias_ih_l0'], s.gi, G3);
+        } else {
+          gi = s.giYear.subarray(yr * B * G3, (yr + 1) * B * G3);
+          if (!giDone[yr]) {
+            assemble(yr, false);
+            linear4(s.tok, B, TOK, P['gru.weight_ih_l0'], P['gru.bias_ih_l0'], gi, G3);
+            giDone[yr] = 1;
           }
-          s.tok[o + D_CLIM + 7] = ageV;
-          s.tok[o + D_CLIM + 8] = masked ? 1 : 0;             // maskflag / "an action is given here"
-          const g = b * 21;
-          for (let k = 0; k < 21; k++) s.tok[o + D_CLIM + 9 + k] = glob[g + k];
         }
 
         // ---- GRU cell (PyTorch gate order r, z, n)
-        linear4(s.tok, B, TOK, P['gru.weight_ih_l0'], P['gru.bias_ih_l0'], s.gi, 3 * D_HID);
-        linear4(s.hid, B, D_HID, P['gru.weight_hh_l0'], P['gru.bias_hh_l0'], s.gh, 3 * D_HID);
+        linear4(s.hid, B, D_HID, P['gru.weight_hh_l0'], P['gru.bias_hh_l0'], s.gh, G3);
         for (let b = 0; b < B; b++) {
-          const go = b * 3 * D_HID, ho = b * D_HID;
+          const go = b * G3, ho = b * D_HID;
           for (let j = 0; j < D_HID; j++) {
-            const r = sigmoid(s.gi[go + j] + s.gh[go + j]);
-            const z = sigmoid(s.gi[go + D_HID + j] + s.gh[go + D_HID + j]);
-            const n = Math.tanh(s.gi[go + 2 * D_HID + j] + r * s.gh[go + 2 * D_HID + j]);
+            const r = sigmoid(gi[go + j] + s.gh[go + j]);
+            const z = sigmoid(gi[go + D_HID + j] + s.gh[go + D_HID + j]);
+            const n = Math.tanh(gi[go + 2 * D_HID + j] + r * s.gh[go + 2 * D_HID + j]);
             s.hid[ho + j] = (1 - z) * n + z * s.hid[ho + j];
           }
         }

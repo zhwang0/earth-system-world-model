@@ -58,7 +58,18 @@
   <th class="n">Inverse round-trip error</th><th>Result</th>
 </tr></thead><tbody></tbody></table>
 
-<h2>3 · Speed</h2>
+<h2>3 · The landscape</h2>
+<p class="sub">
+  The digital twin's 256 cells ship packed (year-to-year deltas, split byte planes, gzip). Here the
+  page unpacks them exactly as the twin does and rolls cells out under the twin's own tools,
+  against the same inputs run through the paper's PyTorch code, stored to five decimals.
+</p>
+<table id="t-twin"><thead><tr>
+  <th>Stand age</th><th>Cell</th><th>Actions</th><th class="n">Max abs error</th>
+  <th class="n">2021 height</th><th>Result</th>
+</tr></thead><tbody></tbody></table>
+
+<h2>4 · Speed</h2>
 <table id="t-speed"><thead><tr>
   <th>Operation</th><th class="n">Time</th><th>Note</th>
 </tr></thead><tbody></tbody></table>
@@ -66,6 +77,7 @@
 <script type="module">
 import { WorldModel } from './js/wm.js';
 import { CellStore } from './js/data.js';
+import { loadRegion } from './js/twin-data.js';
 
 const $ = (s) => document.querySelector(s);
 const row = (tbl, cells) => {
@@ -132,7 +144,34 @@ try {
       { cls: 'n', text: hi.toFixed(4) }, { cls: 'n', text: `${r.toExponential(2)} m` }, pass(good)]);
   }
 
-  // 3 — speed
+  // 3 — the landscape: unpacked as the twin unpacks it, against PyTorch on the same inputs
+  {
+    const t0 = performance.now();
+    const region = await loadRegion('.', 'amazon');
+    const ms = performance.now() - t0;
+    const tg = await (await fetch('assets/twin/amazon-golden.json')).json();
+    let tw = 0;
+    for (const c of tg.cases) {
+      const m = await get(String(c.age));
+      const acts = new Float32Array(41).fill(NaN);
+      for (const [y, metres] of c.actions) acts[y] = metres;
+      const out = m.rollout(region.clim[c.cell], region.seed(c.age, c.cell), c.actions.length ? acts : null, 1);
+      let e = 0;
+      for (let y = 0; y < 41; y++) for (let k = 0; k < 7; k++) {
+        e = Math.max(e, Math.abs(out[y * 7 + k] - c.expect[y][k]));
+      }
+      tw = Math.max(tw, e);
+      const good = e < 1e-3;
+      if (!good) failures++;
+      row('#t-twin', [`${c.age} yr`, `#${c.cell}`, String(c.actions.length),
+        { cls: 'n', text: e.toExponential(2) },
+        { cls: 'n', text: `${out[40 * 7].toFixed(3)} m` }, pass(good)]);
+    }
+    row('#t-twin', ['', `${region.meta.n_cells} cells`, 'unpacked',
+      { cls: 'n', text: `${ms.toFixed(0)} ms` },
+      { cls: 'n', text: `${(region.meta.bytes / 1e6).toFixed(2)} MB` }, '']);
+  }
+  // 4 — speed
   {
     const m = await get('150');
     const rec = await store.cell(golden.cases[0].cell_id);

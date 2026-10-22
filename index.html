@@ -25,6 +25,7 @@
   <a class="nav-mark" href="#top"><span class="mark" aria-hidden="true"></span> Earth System World Model</a>
   <nav class="nav-links">
     <a href="#try">Try it</a>
+    <a href="#twin">Landscape</a>
     <a href="#how">How</a>
     <a href="#results">Results</a>
     <a href="#cite">Paper</a>
@@ -156,6 +157,69 @@
         </p>
       </div>
     </details>
+  </div>
+</section>
+
+<!-- ───────────────────────────────────────────────────────────── the landscape -->
+<section class="band band-twin" id="twin">
+  <div class="wrap">
+    <p class="kicker">Digital twin</p>
+    <h2>Now, a whole landscape</h2>
+    <p class="section-lede">
+      256 forest cells of the western Amazon, each one the paper's model running live in your
+      browser. Open a logging road, set a fire, replant — then press play.
+    </p>
+
+    <div class="twin" id="twin-root" data-state="idle">
+      <div class="tw-view">
+        <canvas class="tw-canvas" id="tw-canvas" role="img"
+                aria-label="A 16 by 16 block of Amazon forest cells; the trees follow the canopy height the model predicts for each"></canvas>
+        <div class="tw-hud">
+          <p class="tw-where">Western Amazon · 8° × 8° · 256 cells</p>
+          <p class="tw-year" id="tw-year">2021</p>
+        </div>
+        <div class="tw-carbon">
+          <p class="tw-c-l">Carbon above ground, <span id="tw-c-year">2021</span></p>
+          <p class="tw-c-n" id="tw-c-total">…</p>
+          <p class="tw-c-d" id="tw-c-delta"></p>
+          <svg class="tw-c-chart" id="tw-c-chart" viewBox="0 0 200 48" preserveAspectRatio="none" aria-hidden="true"></svg>
+        </div>
+        <p class="tw-status" id="tw-status">Starts when you scroll here</p>
+        <div class="tw-views" role="group" aria-label="Colour the canopy by">
+          <span class="tw-legend" id="tw-legend" hidden><i></i>lower · higher than no action</span>
+          <button type="button" data-view="forest">Forest</button>
+          <button type="button" data-view="change">Change</button>
+        </div>
+        <div class="tw-tip" id="tw-tip" hidden></div>
+      </div>
+
+      <div class="tw-bar">
+        <div class="tw-tools" id="tw-tools" role="group" aria-label="Paint an intervention"></div>
+        <div class="tw-opts">
+          <div class="tw-brush" role="group" aria-label="Brush">
+            <button type="button" data-brush="1">1 cell</button>
+            <button type="button" data-brush="3">3 × 3</button>
+          </div>
+          <label class="tw-when" id="tw-when">in <output id="tw-out-year">2001</output>
+            <input type="range" id="tw-year-in" min="5" max="40" value="20" step="1"></label>
+          <button class="btn btn-sm" id="tw-example" type="button">Example</button>
+          <button class="btn btn-sm" id="tw-clear" type="button">Clear</button>
+        </div>
+        <p class="tw-hint" id="tw-hint"></p>
+      </div>
+
+      <div class="tw-time">
+        <button class="tw-play" id="tw-play" type="button" aria-label="Play">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-play" d="M8 5v14l11-7Z"/><path class="i-pause" d="M7 5h4v14H7Zm6 0h4v14h-4Z"/></svg>
+        </button>
+        <input type="range" id="tw-scrub" min="0" max="40" value="40" step="0.01" aria-label="Year">
+        <span class="tw-span" aria-hidden="true"><i>1981</i><i>2021</i></span>
+      </div>
+    </div>
+    <p class="fine tw-fine">
+      Each cell runs on its own, as in the paper: nothing spreads between cells. 0.5° cells, inside
+      the paper's NW South America study region.
+    </p>
   </div>
 </section>
 

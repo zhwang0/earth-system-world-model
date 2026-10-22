@@ -223,6 +223,28 @@ else:
         if declared is not None and chunks and declared != total:
             fail('%s: %s says %d cells, the chunks hold %d' % (CELLS, dkey, declared, total))
 
+# ------------------------------------------------------- digital twin regions
+# js/twin-data.js reads assets/twin/<name>.json, then the packed inputs that file names.
+TWIN = 'assets/twin'
+if os.path.isdir(os.path.join(ROOT, TWIN)):
+    for meta_path in sorted(p for p in walk(TWIN, '.json')):
+        referenced.add(meta_path)
+        try:
+            tm = json.loads(read(meta_path))
+        except ValueError as e:
+            fail('%s: not valid JSON (%s)' % (meta_path, e))
+            continue
+        if 'n_cells' not in tm:
+            continue                     # not a region: e.g. its PyTorch fixtures for tests.html
+        path = TWIN + '/' + tm.get('file', '')
+        need(path, meta_path)
+        full = os.path.join(ROOT, path)
+        if os.path.exists(full) and os.path.getsize(full) != tm.get('bytes'):
+            fail('%s: %d bytes, %s says %s' % (path, os.path.getsize(full), meta_path, tm.get('bytes')))
+        if len(tm.get('cells', [])) != tm.get('n_cells') or tm.get('n_cells') != tm.get('rows', 0) * tm.get('cols', 0):
+            fail('%s: %d cells listed, n_cells %s, grid %sx%s'
+                 % (meta_path, len(tm.get('cells', [])), tm.get('n_cells'), tm.get('rows'), tm.get('cols')))
+
 # ------------------------------------------------- nothing heavy and unasked-for
 def is_referenced(path):
     if path in referenced:

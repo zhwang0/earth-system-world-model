@@ -80,6 +80,19 @@ async function start() {
   await lab.setCell(first.id, true);
   lab.start();
 
+  // The landscape loads as it comes near: its own workers, the weights again (from cache) and
+  // 1.4 MB of forcing. Nobody who stops at the first demo pays for it.
+  const twinRoot = $('#twin-root');
+  if (twinRoot) {
+    const io = new IntersectionObserver(async ([e]) => {
+      if (!e.isIntersecting) return;
+      io.disconnect();
+      const { createTwin } = await import('./twin.js');
+      createTwin({ root: twinRoot, base, manifest });
+    }, { rootMargin: '900px 0px' });
+    io.observe(twinRoot);
+  }
+
   try {
     const { createGlobe } = await import('./globe.js');
     globe = await createGlobe({

@@ -10,6 +10,12 @@ ecosystem: canopy height, aboveground biomass, soil carbon, LAI, GPP, NPP and he
 respiration, year by year, against the untouched baseline. Nothing is sent to a server; the
 forecast is computed on your machine from the cell's own climate forcing.
 
+Below it is a digital twin of a landscape: 256 contiguous cells of the western Amazon, inside
+the paper's NW South America study region, each run by the same model in parallel Web Workers.
+Paint logging, fire, replanting or protection onto the board, cell by cell and year by year;
+the edited cells re-run and the landscape plays forward, with its carbon totals.
+`tests.html` checks both against the paper's PyTorch code in your own browser.
+
 ## Paper
 
 Zhihao Wang, Ruichen Wang, Ruohan Li, Lei Ma, George Hurtt, Xiaowei Jia, Gengchen Mai,
@@ -19,8 +25,9 @@ Terrestrial Ecosystems.* ACM SIGSPATIAL '26. [arXiv:2609.08855](https://arxiv.or
 ## Data
 
 The ecosystem states and climate forcing behind the page come from the **CarbonGlobe** dataset:
-<https://github.com/zhwang0/carbon-globe>. The site ships only the handful of cells it needs,
-quantized to int16 — the full dataset lives at that link.
+<https://github.com/zhwang0/carbon-globe>. The site ships only the cells it needs, quantized to
+int16 (the landscape's are packed further, 2.8 MB to 1.4 MB, and unpacked exactly in the
+browser). The full dataset lives at that link.
 
 ## Previewing locally
 
