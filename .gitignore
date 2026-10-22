@@ -28,6 +28,8 @@ node_modules/
 *.ckpt
 *.bin
 
-# ...except the exported model weights and the forest-cell chunks the browser fetches
+# ...except the exported model weights, the forest-cell chunks and the landscape's packed
+# inputs, all of which the browser fetches
 !/assets/model/*.bin
 !/assets/cells/*.bin
+!/assets/twin/*.bin
