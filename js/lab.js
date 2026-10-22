@@ -5,13 +5,21 @@
  * the scenario fixes the magnitude, so there is exactly one number to move. Canopy height and
  * biomass get full charts; the other five variables appear as compact response chips, which is
  * what shows the coupling without burying the point under seven plots.
+ *
+ * Above them stands the forest itself (stand.js). A new scenario or site plays its forty years
+ * once, and a single focus year ties the stand, the charts' crosshair and every reported
+ * difference together: the playhead while it plays, the year under the pointer while one is read,
+ * 2021 at rest.
  */
 
-import { buildCharts, buildChips, pick, BANDS } from './charts.js';
+import { buildCharts, buildChips, pick, BANDS, Policy } from './charts.js';
+import { Stand } from './stand.js';
+import { Locator } from './locator.js';
 
 const YEARS = 41;
 const YEAR0 = 1981;
 const SEED = 5;
+const PLAY_MS = 2600;
 
 const ICON = {
   leaf: 'M5 21c0-7 4-12 14-14 0 9-5 14-14 14Zm0 0c1-4 3-6 6-8',
@@ -56,10 +64,19 @@ export class Lab {
     this.ed = null;
     this._busy = false;
     this._timer = 0;
+    this.fy = null;              // the focus year; null = at rest, which reads 2021
+    this._src = 'chart';         // what the visitor is reading it from
+    this._playNext = false;      // play the next result through its forty years
+    this.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     this.$ = (s) => root.querySelector(s);
     this.charts = buildCharts(this.$('#chart-grid'), [0, 1]);
     this.chips = buildChips(this.$('#chips'), [2, 3, 4, 5, 6]);
+    this.policy = new Policy(this.$('#policy'));
+    this.stand = new Stand(this.$('#stand'));
+    this.loc = new Locator(this.$('#loc'), this.$('#loc-pin'));
+    for (const c of this.charts) c.onHover = (y) => this._read(y, 'chart');
+    this.policy.onHover = (y) => this._read(y, 'policy');
     this._buildSites();
     this._buildActions();
     this._wire();
@@ -108,7 +125,11 @@ export class Lab {
 
   _wire() {
     this.$('#sel-cell').addEventListener('change', (e) => this.setCell(Number(e.target.value)));
-    this.$('#sel-age').addEventListener('change', (e) => { this.age = e.target.value; this.refresh(); });
+    this.$('#sel-age').addEventListener('change', (e) => {
+      this.age = e.target.value;
+      this._playNext = true;
+      this.refresh();
+    });
     this.$('#btn-random').addEventListener('click', () => {
       const p = this.ix.cells;
       this.setCell(p[Math.floor(Math.random() * p.length)].id, true);
@@ -122,6 +143,17 @@ export class Lab {
       clearTimeout(this._tTimer);
       this._tTimer = setTimeout(() => this._solve(), 260);
     });
+    this.$('#btn-replay').addEventListener('click', () => this._play());
+    // a reading taken with a finger stays until the visitor touches something else
+    document.addEventListener('pointerdown', (e) => {
+      if (this.fy != null && !this._raf && !e.target.closest('.chart svg, .policy-svg')) this._focus(null);
+    });
+    // the first play waits until the stand is actually on screen
+    this._seen = false;
+    new IntersectionObserver(([e]) => {
+      this._seen = e.isIntersecting;
+      if (this._seen && this._pending) { this._pending = false; this._play(); }
+    }, { threshold: 0.4 }).observe(this.$('#stage'));
   }
 
   /* ------------------------------------------------------------- state */
@@ -138,6 +170,7 @@ export class Lab {
     const goal = id === 'goal';
     this.$('#goal-row').hidden = !goal;
     this.$('#when-row').hidden = goal || id === 'none';
+    this._playNext = true;
     if (goal) this._setTargetRange().then(() => this._solve());
     else this._queue();
   }
@@ -147,11 +180,14 @@ export class Lab {
     const c = this.ix.cells.find((x) => x.id === id);
     if (syncSelect) this.$('#sel-cell').value = String(id);
     const ns = c.lat >= 0 ? 'N' : 'S', ew = c.lon >= 0 ? 'E' : 'W';
-    this.$('#cell-readout').textContent =
-      `${Math.abs(c.lat).toFixed(2)}°${ns}, ${Math.abs(c.lon).toFixed(2)}°${ew}` +
-      (c.trained ? ` · ${this.ix.regions[c.region]}` : '');
+    this.$('#cell-readout').innerHTML =
+      `<span>${Math.abs(c.lat).toFixed(2)}°${ns} ${Math.abs(c.lon).toFixed(2)}°${ew}</span>` +
+      `<span>${c.trained ? this.ix.regions[c.region] : 'Outside the study regions'}</span>`;
     this.$('#extrap-warn').hidden = !!c.trained;
+    this.stand.setSite(c);
+    this.loc.flyTo(c.lat, c.lon);
     this.onCellChange(c);
+    this._playNext = true;
     await this.refresh();
   }
 
@@ -214,6 +250,7 @@ export class Lab {
 
   _draw(act, markYear) {
     this.$('#key-act').hidden = !act;
+    this.$('#chips-what').textContent = act ? 'Change from no action' : 'The other five variables';
     for (const c of this.charts) {
       c.update({
         ed: this.ed ? pick(this.ed, c.band) : null,
@@ -228,6 +265,73 @@ export class Lab {
         act: act ? pick(act, c.band) : null,
       });
     }
+    this.stand.setSeries({
+      free: pick(this.free, 0),
+      act: act ? pick(act, 0) : null,
+      kind: this.scenario,
+      year: markYear,
+    });
+    if (this._playNext) { this._playNext = false; this._play(); }
+    else this._focus(this.fy, this._tip);
+  }
+
+  /* ------------------------------------------------------------- time */
+
+  /** One focus year for the whole panel. y: fractional year index, or null for 2021 at rest. */
+  _focus(y, tip = false, src = this._src) {
+    this.fy = y;
+    this._tip = tip;
+    this._src = src;
+    for (const c of this.charts) c.setFocus(y, tip && src === 'chart');
+    for (const c of this.chips) c.setFocus(y);
+    this.policy.setFocus(y, tip && src === 'policy');
+    const sy = y == null ? YEARS - 1 : y;
+    this.stand.setYear(sy);
+    this._hud(sy);
+  }
+
+  /** The visitor reads a year off a chart: that takes over from the playhead. */
+  _read(y, src) {
+    this._stop();
+    this._focus(y, y != null, src);
+  }
+
+  _hud(y) {
+    const { free, act } = this.stand.valuesAt(y);
+    const yr = String(YEAR0 + Math.round(y));
+    this.$('#stage-year').textContent = yr;
+    this.$('#chips-year').textContent = yr;
+    if (!Number.isFinite(free)) return;
+    this.$('#stage-read').innerHTML = Number.isFinite(act)
+      ? `<span><i class="sw sw-act"></i>Your scenario <b>${act.toFixed(1)} m</b></span>` +
+        `<span><i class="sw sw-free"></i>No action <b>${free.toFixed(1)} m</b></span>`
+      : `<span><i class="sw sw-free"></i>Canopy height <b>${free.toFixed(1)} m</b></span>`;
+  }
+
+  /** Play the current result through its forty years, once. */
+  _play() {
+    this._stop();
+    if (this.reduced) { this._focus(null); return; }
+    if (!this._seen) { this._pending = true; this._focus(null); return; }
+    const t0 = performance.now();
+    this.root.classList.add('is-playing');
+    const step = (now) => {
+      const u = Math.min(1, (now - t0) / PLAY_MS);
+      if (u < 1) {
+        this._focus(u * (YEARS - 1));
+        this._raf = requestAnimationFrame(step);
+      } else {
+        this._stop();
+        this._focus(null);
+      }
+    };
+    this._raf = requestAnimationFrame(step);
+  }
+
+  _stop() {
+    cancelAnimationFrame(this._raf);
+    this._raf = 0;
+    this.root.classList.remove('is-playing');
   }
 
   /* ------------------------------------------------------------- target */
@@ -277,16 +381,22 @@ export class Lab {
       const r = await this.client.send({
         type: 'solve', cellId: this.cellId, age: this.age, band: 1, year: 40, target, K: 16,
       });
-      const mean = r.actions && r.actions.length
-        ? Array.from(r.actions).reduce((s, v) => s + v, 0) / r.actions.length : 0;
-      const per = `${mean >= 0 ? '+' : '−'}${Math.abs(mean).toFixed(2)} m`;
+      // what the stand would have done on its own, year by year, against what the plan asks
+      const nat = new Float32Array(36);
+      for (let k = 0; k < 36; k++) nat[k] = this.free[(k + SEED) * 7] - this.free[(k + SEED - 1) * 7];
+      const acts = Float32Array.from(r.actions || []);
+      let extra = 0;
+      for (let k = 0; k < acts.length; k++) extra += acts[k] - nat[k];
+      extra = acts.length ? extra / acts.length : 0;
+      const per = `${extra >= 0 ? '+' : '−'}${Math.abs(extra).toFixed(2)} m`;
       vd.dataset.status = r.status === 'solved' ? 'ok' : 'no';
       vd.innerHTML = r.status === 'solved'
-        ? (Math.abs(mean) < 0.005
+        ? (Math.abs(extra) < 0.005
           ? '<b>Already there.</b> No intervention needed.'
-          : `<b>Reachable.</b> Grow the canopy <b>${per} a year</b>, every year from 1986.`)
+          : `<b>Reachable.</b> About <b>${per}</b> of canopy a year beyond natural growth, 1986–2021.`)
         : `<b>Out of reach.</b> The most this stand can do is ` +
           `<b>${r.achieved.toFixed(1)} ${BANDS[1].unit}</b>.`;
+      if (acts.length === 36) this.policy.update({ actions: acts, nat });
       this._draw(r.run, NaN);
       this.$('#compute-note').textContent = `${Math.round(performance.now() - t0)} ms · inverse solve`;
     } catch (err) {

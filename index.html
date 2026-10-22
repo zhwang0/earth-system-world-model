@@ -69,7 +69,7 @@
     <div class="lab" id="lab-root" data-state="loading">
 
       <div class="lab-bar">
-        <div class="field">
+        <div class="field field-grow">
           <label for="sel-cell">Site</label>
           <select id="sel-cell"></select>
         </div>
@@ -81,10 +81,6 @@
             <option value="300">Mature</option>
           </select>
         </div>
-        <div class="field field-grow">
-          <label>Location</label>
-          <p class="readout" id="cell-readout">—</p>
-        </div>
         <button class="btn btn-sm" id="btn-random">Another site</button>
       </div>
 
@@ -92,19 +88,42 @@
         Outside the six regions the model was trained on — exploratory, not a validated result.
       </p>
 
-      <div class="actions" id="actions" role="group" aria-label="Choose an intervention"></div>
-      <p class="act-hint" id="act-hint"></p>
+      <div class="stage" id="stage">
+        <svg class="stand" id="stand" role="img"
+             aria-label="This site's forest, drawn from the canopy height the model predicts"></svg>
+        <div class="hud">
+          <p class="hud-year" id="stage-year">2021</p>
+          <p class="hud-read" id="stage-read"></p>
+        </div>
+        <div class="where">
+          <p class="where-txt" id="cell-readout">—</p>
+          <div class="loc-wrap">
+            <canvas class="loc" id="loc" aria-hidden="true"></canvas>
+            <span class="loc-pin" id="loc-pin" aria-hidden="true"></span>
+          </div>
+        </div>
+        <button class="replay" id="btn-replay" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4v4.2h4.2"/></svg>
+          Replay
+        </button>
+      </div>
 
-      <div class="when" id="when-row">
-        <label for="rng-year">in <output id="out-year">2001</output></label>
-        <input type="range" id="rng-year" min="5" max="40" value="20" step="1">
-        <span class="when-span" aria-hidden="true"><i>1986</i><i>2021</i></span>
+      <div class="actions" id="actions" role="group" aria-label="Choose an intervention"></div>
+
+      <div class="act-row">
+        <p class="act-hint" id="act-hint"></p>
+        <div class="when" id="when-row">
+          <label for="rng-year">in <output id="out-year">2001</output></label>
+          <input type="range" id="rng-year" min="5" max="40" value="20" step="1">
+          <span class="when-span" aria-hidden="true"><i>1986</i><i>2021</i></span>
+        </div>
       </div>
 
       <div class="goal" id="goal-row" hidden>
         <label for="rng-target">Target biomass in 2021 <output id="out-target">—</output></label>
         <input type="range" id="rng-target" min="0" max="100" value="60" step="1">
         <p class="verdict" id="verdict"></p>
+        <div class="policy" id="policy"></div>
       </div>
 
       <div class="answer">
@@ -114,6 +133,7 @@
           <span><i class="sw sw-ed"></i>ED simulation</span>
         </p>
         <div class="chart-pair" id="chart-grid"></div>
+        <p class="chips-cap"><span id="chips-what">Change from no action</span> · <b id="chips-year">2021</b></p>
         <div class="chips" id="chips"></div>
       </div>
 

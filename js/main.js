@@ -64,7 +64,12 @@ async function start() {
   let globe = null;
   const lab = new Lab({
     root: $('#lab-root'), client, index, manifest,
-    onCellChange: (c) => globe && globe.select(c.id),
+    // the hero's Earth follows the lab, so scrolling back up finds the site you were editing
+    onCellChange: (c) => {
+      if (!globe) return;
+      globe.select(c.id);
+      globe.flyTo(c.lat, c.lon, { ms: 1400 });
+    },
   });
 
   // Open in the Amazon: region 1 is NW South America, inside the training regions, and this

@@ -836,7 +836,10 @@ export async function createGlobe(opts = {}) {
 
   const ro = new ResizeObserver(() => resize());
   ro.observe(canvas);
-  const io = new IntersectionObserver(([en]) => { visible = en.isIntersecting; sync(); }, { threshold: 0 });
+  // A jump to #try leaves the hero's last ~80px under the sticky nav; a sliver nobody can see
+  // should not keep the planet rendering at full rate, so the band under the nav does not count.
+  const io = new IntersectionObserver(([en]) => { visible = en.isIntersecting; sync(); },
+    { threshold: 0, rootMargin: '-100px 0px 0px 0px' });
   io.observe(canvas);
 
   const onLost = (e) => { e.preventDefault(); stop(); };
