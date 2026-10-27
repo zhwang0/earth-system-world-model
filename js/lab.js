@@ -6,8 +6,9 @@
  * biomass get full charts; the other five variables appear as compact response chips, which is
  * what shows the coupling without burying the point under seven plots.
  *
- * Above them stands the forest itself (stand.js). A new scenario or site plays its forty years
- * once, and a single focus year ties the stand, the charts' crosshair and every reported
+ * Above them stands the forest itself: in 3D (stage3d.js), where an action forks the plot into
+ * two futures, or flat (stand.js) without WebGL. A new scenario or site plays once, slowed through
+ * the action, and a single focus year ties the stand, the charts' crosshair and every reported
  * difference together: the playhead while it plays, the year under the pointer while one is read,
  * 2021 at rest.
  */
@@ -65,6 +66,7 @@ export class Lab {
     this.chips = buildChips(this.$('#chips'), [2, 3, 4, 5, 6]);
     this.policy = new Policy(this.$('#policy'));
     this.stand = new Stand(this.$('#stand'));
+    this._upgradeStage();
     this.loc = new Locator(this.$('#loc'), this.$('#loc-pin'));
     for (const c of this.charts) c.onHover = (y) => this._read(y, 'chart');
     this.policy.onHover = (y) => this._read(y, 'policy');
@@ -76,6 +78,29 @@ export class Lab {
   get env() { return this.manifest.ages[this.age].action_envelope; }
 
   /* ------------------------------------------------------------- build */
+
+  /**
+   * The flat drawing holds the stage until the 3D forest is ready; three.js is already on its way
+   * for the hero's globe. Without WebGL the drawing simply stays.
+   */
+  _upgradeStage() {
+    import('./stage3d.js').then(({ createStage }) => {
+      const flat = this.stand;
+      const s = createStage(this.$('#stage'), {
+        onLost: () => {
+          this.stand = flat;
+          if (this._site) flat.setSite(this._site);
+          if (this._ser) flat.setSeries(this._ser);
+          flat.setYear(this.fy == null ? YEARS - 1 : this.fy);
+        },
+      });
+      if (!s) return;
+      if (this._site) s.setSite(this._site);
+      if (this._ser) s.setSeries(this._ser);
+      s.setYear(this.fy == null ? YEARS - 1 : this.fy);
+      this.stand = s;
+    }).catch((err) => console.warn('3D stage unavailable:', err));
+  }
 
   _buildSites() {
     const sel = this.$('#sel-cell');
@@ -116,7 +141,7 @@ export class Lab {
     this.$('#sel-cell').addEventListener('change', (e) => this.setCell(Number(e.target.value)));
     this.$('#sel-age').addEventListener('change', (e) => {
       this.age = e.target.value;
-      this._playNext = true;
+      this._playNext = 'site';
       this.refresh();
     });
     this.$('#btn-random').addEventListener('click', () => {
@@ -127,21 +152,30 @@ export class Lab {
       this.$('#out-year').textContent = String(YEAR0 + Number(this.$('#rng-year').value));
       this._queue();
     });
+    // letting go of the year replays the action at its new date
+    this.$('#rng-year').addEventListener('change', () => {
+      this._playNext = 'year';
+      this._queue();
+    });
     this.$('#rng-target').addEventListener('input', () => {
       this._showTarget();
       clearTimeout(this._tTimer);
       this._tTimer = setTimeout(() => this._solve(), 260);
     });
-    this.$('#btn-replay').addEventListener('click', () => this._play());
+    this.$('#btn-replay').addEventListener('click', () => {
+      const y = this._ser && this._ser.year;
+      this._play(Number.isFinite(y) ? Math.max(0, y - 6) : 0);
+    });
     // a reading taken with a finger stays until the visitor touches something else
     document.addEventListener('pointerdown', (e) => {
-      if (this.fy != null && !this._raf && !e.target.closest('.chart svg, .policy-svg')) this._focus(null);
+      if (this.fy != null && !this._raf && !e.target.closest('.chart svg, .policy-svg, .stage-gl')) this._focus(null);
     });
     // the first play waits until the stand is actually on screen
     this._seen = false;
+    this._pending = null;
     new IntersectionObserver(([e]) => {
       this._seen = e.isIntersecting;
-      if (this._seen && this._pending) { this._pending = false; this._play(); }
+      if (this._seen && this._pending != null) { const from = this._pending; this._pending = null; this._play(from); }
     }, { threshold: 0.4 }).observe(this.$('#stage'));
   }
 
@@ -159,7 +193,7 @@ export class Lab {
     const goal = id === 'goal';
     this.$('#goal-row').hidden = !goal;
     this.$('#when-row').hidden = goal || id === 'none';
-    this._playNext = true;
+    this._playNext = 'scenario';
     if (goal) this._setTargetRange().then(() => this._solve());
     else this._queue();
   }
@@ -173,10 +207,11 @@ export class Lab {
       `<span>${Math.abs(c.lat).toFixed(2)}°${ns} ${Math.abs(c.lon).toFixed(2)}°${ew}</span>` +
       `<span>${c.trained ? this.ix.regions[c.region] : 'Outside the study regions'}</span>`;
     this.$('#extrap-warn').hidden = !!c.trained;
+    this._site = c;
     this.stand.setSite(c);
     this.loc.flyTo(c.lat, c.lon);
     this.onCellChange(c);
-    this._playNext = true;
+    this._playNext = 'site';
     await this.refresh();
   }
 
@@ -254,14 +289,25 @@ export class Lab {
         act: act ? pick(act, c.band) : null,
       });
     }
-    this.stand.setSeries({
+    // the stage needs the action's date for ramps too, and a name for the scenario's plot
+    const s = SCENARIOS.find((x) => x.id === this.scenario);
+    const y0 = Number(this.$('#rng-year').value);
+    const dated = !!act && !!s && (s.mag != null || s.ramp != null);
+    this._ser = {
       free: pick(this.free, 0),
       act: act ? pick(act, 0) : null,
       kind: this.scenario,
-      year: markYear,
-    });
-    if (this._playNext) { this._playNext = false; this._play(); }
-    else this._focus(this.fy, this._tip);
+      year: dated ? y0 : NaN,
+      span: s && s.ramp != null ? s.span : null,
+      label: !act ? '' : dated ? `${s.label} · ${YEAR0 + y0}` : 'Your plan',
+    };
+    this.stand.setSeries(this._ser);
+    if (this._playNext) {
+      // a new site grows from 1981; a new action starts just before it happens
+      const from = this._playNext === 'site' || !dated ? 0 : Math.max(0, y0 - 3.5);
+      this._playNext = false;
+      this._play(from);
+    } else this._focus(this.fy, this._tip);
   }
 
   /* ------------------------------------------------------------- time */
@@ -297,17 +343,29 @@ export class Lab {
       : `<span><i class="sw sw-free"></i>Canopy height <b>${free.toFixed(1)} m</b></span>`;
   }
 
-  /** Play the current result through its forty years, once. */
-  _play() {
+  /**
+   * Play the current result from year `from` to 2021, once. The 3D stage slows the playhead
+   * through the action itself, so a fire or a harvest takes the seconds it needs to be seen.
+   */
+  _play(from = 0) {
     this._stop();
     if (this.reduced) { this._focus(null); return; }
-    if (!this._seen) { this._pending = true; this._focus(null); return; }
+    if (!this._seen) { this._pending = from; this._focus(null); return; }
+    const last = YEARS - 1;
+    const segs = this.stand.schedule ? this.stand.schedule(from)
+      : [{ t0: from, t1: last, ms: (PLAY_MS * (last - from)) / last }];
+    const total = segs.reduce((s, g) => s + g.ms, 0);
     const t0 = performance.now();
     this.root.classList.add('is-playing');
     const step = (now) => {
-      const u = Math.min(1, (now - t0) / PLAY_MS);
-      if (u < 1) {
-        this._focus(u * (YEARS - 1));
+      let e = now - t0;
+      if (e < total) {
+        let y = last;
+        for (const g of segs) {
+          if (e <= g.ms) { y = g.t0 + (g.t1 - g.t0) * (g.ms ? e / g.ms : 1); break; }
+          e -= g.ms;
+        }
+        this._focus(y);
         this._raf = requestAnimationFrame(step);
       } else {
         this._stop();

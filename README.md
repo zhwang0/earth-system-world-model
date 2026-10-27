@@ -10,6 +10,12 @@ ecosystem: canopy height, aboveground biomass, soil carbon, LAI, GPP, NPP and he
 respiration, year by year, against the untouched baseline. Nothing is sent to a server; the
 forecast is computed on your machine from the cell's own climate forcing.
 
+The forest is drawn in 3D from those numbers. Choose an action and the plot forks into two
+futures side by side, the same trees left alone and living through your harvest, fire or
+replanting, with the canopy height of each measured on the wall behind it. A short section after
+it makes the case for interactivity: the same what-if question put to a passive emulator, which
+has no input for it, and to the world model, which answers in milliseconds.
+
 Below it is a digital twin of a landscape: 256 contiguous cells of the western Amazon, inside
 the paper's NW South America study region, each run by the same model in parallel Web Workers.
 Paint logging, fire, replanting or protection onto the board, cell by cell and year by year;

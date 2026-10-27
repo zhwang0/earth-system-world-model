@@ -80,6 +80,18 @@ async function start() {
   await lab.setCell(first.id, true);
   lab.start();
 
+  // The case for interactivity asks the same model, at the same Amazon cell, as it scrolls near.
+  const whyRoot = $('#vs');
+  if (whyRoot) {
+    const io = new IntersectionObserver(async ([e]) => {
+      if (!e.isIntersecting) return;
+      io.disconnect();
+      const { Why } = await import('./why.js');
+      new Why({ root: whyRoot, client, cellId: first.id, age: '150', manifest });
+    }, { rootMargin: '500px 0px' });
+    io.observe(whyRoot);
+  }
+
   // The landscape loads as it comes near: its own workers, the weights again (from cache) and
   // 1.4 MB of forcing. Nobody who stops at the first demo pays for it.
   const twinRoot = $('#twin-root');

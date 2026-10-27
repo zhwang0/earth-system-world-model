@@ -25,6 +25,7 @@
   <a class="nav-mark" href="#top"><span class="mark" aria-hidden="true"></span> Earth System World Model</a>
   <nav class="nav-links">
     <a href="#try">Try it</a>
+    <a href="#why">Why</a>
     <a href="#twin">Landscape</a>
     <a href="#how">How</a>
     <a href="#results">Results</a>
@@ -90,6 +91,8 @@
       </p>
 
       <div class="stage" id="stage">
+        <canvas class="stage-gl" id="stage-gl" role="img"
+                aria-label="This site's forest in 3D: with an action, a second plot lives through it beside the plot left alone. Tree heights follow the canopy height the model predicts."></canvas>
         <svg class="stand" id="stand" role="img"
              aria-label="This site's forest, drawn from the canopy height the model predicts"></svg>
         <div class="hud">
@@ -157,6 +160,107 @@
         </p>
       </div>
     </details>
+  </div>
+</section>
+
+<!-- ───────────────────────────────────────────────────────────── why -->
+<section class="band band-why" id="why">
+  <div class="wrap">
+    <p class="kicker">Why interactive</p>
+    <h2>Emulators made Earth models fast.<br><span class="h2-2">But you can only <em>watch</em>.</span></h2>
+    <p class="section-lede">
+      Machine-learning emulators reproduce expensive simulators orders of magnitude faster. Like
+      early video generators, though, they only play back: climate in, trajectory out, with no
+      input for a decision. A digital twin has to answer <em>what if</em>.
+    </p>
+
+    <ol class="asks">
+      <li class="ask">
+        <svg class="ask-fig" viewBox="0 0 120 56" aria-hidden="true">
+          <path class="ax" d="M4 48H116"/>
+          <path class="hist" d="M6 40C18 38 30 31 42 28S56 23 60 22"/>
+          <circle class="now" cx="60" cy="22" r="4"/>
+        </svg>
+        <p class="ask-q">What now?</p>
+        <p class="ask-t"><b>Replica.</b> The system as observed.</p>
+      </li>
+      <li class="ask">
+        <svg class="ask-fig" viewBox="0 0 120 56" aria-hidden="true">
+          <path class="ax" d="M4 48H116"/>
+          <path class="hist" d="M6 40C18 38 30 31 42 28S56 23 60 22"/>
+          <path class="next" pathLength="1" d="M60 22C76 19 94 16 114 14"/>
+          <circle class="now" cx="60" cy="22" r="4"/>
+        </svg>
+        <p class="ask-q">What next?</p>
+        <p class="ask-t"><b>Forecast</b> under a given climate. Emulators made this fast.</p>
+      </li>
+      <li class="ask is-gap">
+        <svg class="ask-fig" viewBox="0 0 120 56" aria-hidden="true">
+          <path class="ax" d="M4 48H116"/>
+          <path class="hist" d="M6 40C18 38 30 31 42 28S56 23 60 22"/>
+          <path class="next" pathLength="1" d="M60 22C76 19 94 16 114 14"/>
+          <path class="branch" pathLength="1" d="M60 22C74 30 92 35 114 37"/>
+          <path class="branch b2" pathLength="1" d="M60 22C74 15 92 8 114 5"/>
+          <circle class="now" cx="60" cy="22" r="4"/>
+        </svg>
+        <p class="ask-q">What if?</p>
+        <p class="ask-t"><b>Impact</b> of a decision: log, burn, replant. A passive emulator has no input for it.</p>
+      </li>
+    </ol>
+
+    <div class="vs" id="vs" data-state="loading">
+      <div class="vs-ask">
+        <p class="vs-q">Ask both the same question. What if, in 2001, we</p>
+        <div class="vs-acts" id="vs-acts" role="group" aria-label="Ask both models"></div>
+      </div>
+      <div class="vs-grid">
+        <article class="vs-card vs-passive">
+          <header class="vs-h">
+            <h3>Passive emulator</h3>
+            <p class="eq">ŷ<sub>t+1</sub> = F(y<sub>1:t</sub>, x<sub>1:t</sub>)</p>
+          </header>
+          <div class="ports">
+            <span class="port"><i>x</i>climate</span>
+            <span class="port"><i>y</i>state</span>
+            <span class="port port-none" data-port="a"><i>a</i>no action input</span>
+          </div>
+          <svg class="vs-chart" viewBox="0 0 400 150" aria-hidden="true"></svg>
+          <p class="vs-say" aria-live="polite">Replays the simulator under the forcing it is given.</p>
+        </article>
+        <article class="vs-card vs-world">
+          <header class="vs-h">
+            <h3>World model <span>this paper</span></h3>
+            <p class="eq">ŷ<sub>t+1</sub> = F(y<sub>1:t</sub>, x<sub>1:t</sub>, <b>a<sub>t</sub></b>)</p>
+          </header>
+          <div class="ports">
+            <span class="port"><i>x</i>climate</span>
+            <span class="port"><i>y</i>state</span>
+            <span class="port port-a" data-port="a"><i>a</i>action</span>
+          </div>
+          <svg class="vs-chart" viewBox="0 0 400 150" aria-hidden="true"></svg>
+          <p class="vs-say" aria-live="polite">The same forecast, plus an input for actions.</p>
+        </article>
+      </div>
+    </div>
+
+    <div class="gains">
+      <div class="gain">
+        <h3>Explore</h3>
+        <p>Try a decision and see forty years of consequences in milliseconds, not a new simulation.</p>
+      </div>
+      <div class="gain">
+        <h3>Plan</h3>
+        <p>Ask the model as often as a search needs, to find yearly actions that reach a target.</p>
+      </div>
+      <div class="gain">
+        <h3>Stay coherent</h3>
+        <p>Edit canopy height; biomass, soil carbon and the fluxes respond with it.</p>
+      </div>
+    </div>
+    <p class="why-next">
+      The hard part is learning actions from simulator runs that contain none.
+      <a href="#how">How the model does it</a>
+    </p>
   </div>
 </section>
 
