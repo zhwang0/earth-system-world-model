@@ -194,7 +194,9 @@ class Stage3D {
       return d;
     };
     this.tagA = mk('ptag ptag-a', '<span class="ptag-l"><i class="sw sw-free"></i><span class="ptag-n">No action</span></span><b class="ptag-v"></b>');
-    this.tagB = mk('ptag ptag-b', '<span class="ptag-l"><i class="sw sw-act"></i><span class="ptag-n"></span></span><b class="ptag-v"></b><span class="ptag-d"></span>');
+    this.tagB = mk('ptag ptag-b', '<span class="ptag-l"><i class="sw sw-act"></i><span class="ptag-n"></span></span><b class="ptag-v"></b>');
+    // the gap between the two canopy levels, measured at the scenario plot's corner
+    this.dim = mk('pdim', '<span class="pdim-t"></span>');
     this.toast = mk('stage-toast', '<b></b><span></span>');
     this.el.classList.add('has-gl');
   }
@@ -216,7 +218,7 @@ class Stage3D {
     };
     this._tagEls ||= {
       va: this.tagA.querySelector('.ptag-v'), n: this.tagB.querySelector('.ptag-n'),
-      vb: this.tagB.querySelector('.ptag-v'), d: this.tagB.querySelector('.ptag-d'),
+      vb: this.tagB.querySelector('.ptag-v'), d: this.dim.querySelector('.pdim-t'),
     };
     const T = this._tagEls;
     place(this.tagA, oA);
@@ -224,17 +226,40 @@ class Stage3D {
     const b = this.fork > 0.02 && this.planBShown;
     const op = b ? smooth(0.5, 1, this.fork).toFixed(3) : '0';
     if (this.tagB._op !== op) { this.tagB._op = op; this.tagB.style.opacity = op; }
+    const d = Ha - Hf;
+    const flat = Math.abs(d) < 0.05;
+    const dop = b && !flat ? op : '0';
+    // the stage's key names only the marks on show: ghosts for a loss, lit crowns for a gain
+    const diff = b && this.fork > 0.5 ? (flat ? 'same' : d < 0 ? 'loss' : 'gain') : '';
+    if (this._diff !== diff) {
+      this._diff = diff;
+      if (diff) this.el.dataset.diff = diff; else delete this.el.dataset.diff;
+    }
+    if (this.dim._op !== dop) { this.dim._op = dop; this.dim.style.opacity = dop; }
     if (b) {
       place(this.tagB, oB);
       put(T.n, '_v', this.series.label || 'Your scenario');
       put(T.vb, '_v', `${Ha.toFixed(1)} m`);
-      const d = Ha - Hf;
+    }
+    if (b && !flat) {
+      // a dimension line from one rail to the other, just outside the plot's front-right corner
+      const v1 = _tagV.set(oB.x + L.W / 2, oB.y + Hf, oB.z + L.D / 2).project(this.cam);
+      const x1 = (v1.x * 0.5 + 0.5) * w, y1 = (-v1.y * 0.5 + 0.5) * h;
+      const v2 = _tagV.set(oB.x + L.W / 2, oB.y + Ha, oB.z + L.D / 2).project(this.cam);
+      const y2 = (-v2.y * 0.5 + 0.5) * h;
+      const top = Math.min(y1, y2), len = Math.max(2, Math.abs(y2 - y1));
+      const left = Math.min(x1 + 10, w - 8);
+      const tr = `translate(${left.toFixed(1)}px, ${top.toFixed(1)}px)`;
+      const ht = `${len.toFixed(1)}px`;
+      if (this.dim._tr !== tr) { this.dim._tr = tr; this.dim.style.transform = tr; }
+      if (this.dim._h !== ht) { this.dim._h = ht; this.dim.style.height = ht; }
       const pct = Hf > 0 ? (d / Hf) * 100 : 0;
       const sg = d > 0 ? '+' : '−';
-      const flat = Math.abs(d) < 0.05;
-      put(T.d, '_v', flat ? 'same' : `<span class="ptag-dm">${sg}${Math.abs(d).toFixed(1)} m · </span>${sg}${Math.abs(pct).toFixed(0)}%`, true);
-      const sign = flat ? 'flat' : d > 0 ? 'pos' : 'neg';
-      if (T.d.dataset.sign !== sign) T.d.dataset.sign = sign;
+      put(T.d, '_v', `<b>${sg}${Math.abs(d).toFixed(1)} m</b><span>${sg}${Math.abs(pct).toFixed(0)}%</span>`, true);
+      const sign = d > 0 ? 'pos' : 'neg';
+      if (this.dim.dataset.sign !== sign) this.dim.dataset.sign = sign;
+      const flip = left > w - (w < 600 ? 62 : 120);
+      if (this.dim._flip !== flip) { this.dim._flip = flip; this.dim.classList.toggle('is-flip', flip); }
     }
 
     // the action's moment, named while it happens
@@ -274,6 +299,8 @@ class Stage3D {
     const top = 1 - 2 * ((narrow ? 58 : 84) / h);
     const bot = -1 + 2 * ((narrow ? 40 : 46) / h);
     const side = narrow ? 0.98 : 0.95;
+    // with two plots, keep room on the right for the measured gap beside the scenario plot
+    const lo = -side, hi = side - (two ? (2 * (narrow ? 70 : 120)) / w : 0);
     const cam = this.cam;
     cam.aspect = w / h;
     cam.updateProjectionMatrix();
@@ -292,10 +319,10 @@ class Stage3D {
         v.set(X, Y, Z).project(cam);
         a = Math.min(a, v.x); b = Math.max(b, v.x); c = Math.min(c, v.y); d = Math.max(d, v.y);
       }
-      const s = Math.max((b - a) / (2 * side), (d - c) / (top - bot));
+      const s = Math.max((b - a) / (hi - lo), (d - c) / (top - bot));
       g.dist *= s;
       g.ty += (((c + d) / 2) - (top + bot) / 2) * g.dist * tanH;
-      g.tx += ((a + b) / 2) * g.dist * tanH * cam.aspect;
+      g.tx += (((a + b) / 2) - (lo + hi) / 2) * g.dist * tanH * cam.aspect;
     }
     if (!this._fitted || this.reduced) { Object.assign(this.view, g); this._fitted = true; }
   }
@@ -335,7 +362,7 @@ class Stage3D {
       e.preventDefault();
       this.lost = true;
       this.el.classList.remove('has-gl');
-      for (const n of [this.tagA, this.tagB, this.toast]) n.remove();
+      for (const n of [this.tagA, this.tagB, this.dim, this.toast]) n.remove();
       if (this.onLost) this.onLost();
     });
 

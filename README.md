@@ -12,14 +12,18 @@ forecast is computed on your machine from the cell's own climate forcing.
 
 The forest is drawn in 3D from those numbers. Choose an action and the plot forks into two
 futures side by side, the same trees left alone and living through your harvest, fire or
-replanting, with the canopy height of each measured on the wall behind it. A short section after
-it makes the case for interactivity: the same what-if question put to a passive emulator, which
-has no input for it, and to the world model, which answers in milliseconds.
+replanting. The difference is drawn on the trees: canopy a scenario removed stands as glass
+ghosts of the trees it would have been, extra growth lights up the crowns above the no-action
+height, and both canopy levels ring each plot with the gap measured. A short section after it
+makes the case for interactivity: the same what-if question put to a passive emulator, which has
+no input for it, and to the world model, which answers in milliseconds.
 
-Below it is a digital twin of a landscape: 256 contiguous cells of the western Amazon, inside
-the paper's NW South America study region, each run by the same model in parallel Web Workers.
-Paint logging, fire, replanting or protection onto the board, cell by cell and year by year;
-the edited cells re-run and the landscape plays forward, with its carbon totals.
+Below it is a digital twin of a landscape: 256 contiguous cells of the western Amazon, where
+Brazil, Colombia and Peru meet, inside the paper's NW South America study region, each run by the
+same model in parallel Web Workers. The board is the real place: each tile carries its own patch
+of the NASA Blue Marble image, the region around it lies underneath, and its rivers and towns are
+named. Paint logging, fire, replanting or protection onto the board, cell by cell and year by
+year; the edited cells re-run and the landscape plays forward, with its carbon totals.
 `tests.html` checks both against the paper's PyTorch code in your own browser.
 
 ## Paper
@@ -57,6 +61,7 @@ the size their manifests claim. Pass `--partial` to run it against a page still 
 ## Credits
 
 - Earth imagery: NASA **Blue Marble** (day) and **Black Marble** (night lights) — public domain.
+- Rivers, towns and borders: **Natural Earth** — public domain.
 - 3D rendering: [three.js](https://threejs.org), MIT licence (vendored, no CDN).
 - Underlying ecosystem simulations: the **Ecosystem Demography (ED)** model, University of Maryland.
 - Figures reproduced from the paper.

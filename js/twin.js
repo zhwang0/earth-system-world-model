@@ -15,6 +15,8 @@
 
 import * as THREE from '../assets/vendor/three.module.js';
 import { Pool } from './twin-pool.js';
+import { Geo } from './twin-geo.js';
+import { Locator } from './locator.js';
 import { svgIcon } from './icons.js';
 
 const YEARS = 41;
@@ -116,6 +118,11 @@ class Twin {
     this.light = this.coarse || Math.min(window.innerWidth, window.innerHeight) < 620;
     this.tool = 'log';
     this.brush = this.coarse ? 3 : 1;
+    // the first look is the region from high above; it zooms to the block, then settles onto the
+    // board (_intro)
+    this.view = this.reduced ? 'forest' : 'map';
+    this.poseName = this.view === 'map' ? 'wide' : 'board';
+    this.treeK = this.view === 'map' ? 0 : 1;
     this.editYear = 20;
     this.fy = YEARS - 1;               // the focus year, fractional while playing
     this.playing = false;
@@ -136,6 +143,7 @@ class Twin {
     this._scene();
     this._ui();
     this._wire();
+    this._place();
     this._status('Starting the model…');
     this.t0 = performance.now();
     this.pool = new Pool({ base: this.base, region: this.region, age: this.age, size: this.light ? 3 : undefined });
@@ -185,10 +193,7 @@ class Twin {
     r.shadowMap.type = THREE.PCFShadowMap;
 
     const scene = this.scene = new THREE.Scene();
-    this.cam = new THREE.PerspectiveCamera(30, 1, 0.5, 200);
-    this.azim = 0.52;
-    this.elev = 0.74;
-    this.view = 'forest';
+    this.cam = new THREE.PerspectiveCamera(30, 1, 0.5, 300);
 
     scene.add(new THREE.HemisphereLight(0xdcefff, 0x16251c, 1.3));
     const sun = new THREE.DirectionalLight(0xfff0d6, 2.4);
@@ -212,8 +217,15 @@ class Twin {
     plinth.receiveShadow = true;
     scene.add(plinth);
 
+    // each tile wears its own 0.5° of the satellite image (twin-geo.js); a clearing or an edit tints
+    // it by aMix
     const slabGeo = new THREE.BoxGeometry(1 - GAP, SLAB, 1 - GAP).translate(0, -SLAB / 2, 0);
-    this.slabs = new THREE.InstancedMesh(slabGeo, new THREE.MeshStandardMaterial({ roughness: 0.95 }), n);
+    this.slabMix = new THREE.InstancedBufferAttribute(new Float32Array(n), 1).setUsage(THREE.DynamicDrawUsage);
+    slabGeo.setAttribute('aMix', this.slabMix);
+    const slabMat = new THREE.MeshStandardMaterial({ roughness: 0.95 });
+    this.geo = new Geo({ base: this.base, meta: this.meta, scene, layer: this.$('#tw-labels') });
+    this.geo.slabShader(slabMat);
+    this.slabs = new THREE.InstancedMesh(slabGeo, slabMat, n);
     this.slabs.receiveShadow = true;
     const m4 = new THREE.Matrix4();
     for (const c of this.cells) {
@@ -279,37 +291,98 @@ class Twin {
     this._tmp = { m: new THREE.Matrix4(), p: new THREE.Vector3(), q: new THREE.Quaternion(),
       s: new THREE.Vector3(), c: new THREE.Color(), c2: new THREE.Color() };
     this._fit();
+    this.geo.load().then(() => { this._labelsDirty = true; this._draw(); })
+      .catch((err) => console.warn('twin: no map layer', err));
   }
 
-  /** Frame the board: fit its corners and a tall canopy into the view, with room for the readouts. */
+  /**
+   * The two camera poses, each fitted to the canvas: the board in 3D, with room for the readouts,
+   * and the map straight from above, the block with the country around it.
+   */
   _fit() {
     const canvas = this.$('#tw-canvas');
     const w = canvas.clientWidth || 800, h = canvas.clientHeight || 500;
     this.renderer.setSize(w, h, false);
-    const cam = this.cam;
-    cam.aspect = w / h;
+    this.cam.aspect = w / h;
+    this.cam.updateProjectionMatrix();
     const { rows, cols } = this.meta;
-    const pts = [];
-    for (const x of [-cols / 2, cols / 2]) for (const z of [-rows / 2, rows / 2]) for (const y of [-0.5, 0.9]) {
-      pts.push(new THREE.Vector3(x, y, z));
-    }
-    const target = new THREE.Vector3(0, 0, 0.6);
-    let d = 30;
-    for (let it = 0; it < 4; it++) {
-      cam.position.set(d * Math.cos(this.elev) * Math.sin(this.azim), d * Math.sin(this.elev),
-        d * Math.cos(this.elev) * Math.cos(this.azim)).add(target);
-      cam.lookAt(target);
-      cam.updateProjectionMatrix();
-      cam.updateMatrixWorld();
-      let mx = 0, my = 0;
-      for (const p of pts) {
-        const v = p.clone().project(cam);
-        mx = Math.max(mx, Math.abs(v.x));
-        my = Math.max(my, Math.abs(v.y));
-      }
-      d *= Math.max(mx / 0.98, my / 0.88);
-    }
+    const box = (x0, x1, z0, z1, ys) => {
+      const out = [];
+      for (const x of [x0, x1]) for (const z of [z0, z1]) for (const y of ys) out.push(new THREE.Vector3(x, y, z));
+      return out;
+    };
+    // the board fits between the readouts: on a phone they stack above it, so it sits lower
+    const narrow = w < 600;
+    const win = narrow ? [-1 + 2 * (88 / h), 1 - 2 * (124 / h)] : [-0.88, 0.7];
+    const top = (pts) => this._fitPose({ azim: 0, elev: 1.38, target: new THREE.Vector3(0, -0.4, 0.5) }, pts, 0.98, [-0.86, 0.84]);
+    this.poses = {
+      board: this._fitPose({ azim: 0.52, elev: 0.74, target: new THREE.Vector3(0, 0, 0.6) },
+        box(-cols / 2, cols / 2, -rows / 2, rows / 2, [-0.5, 0.9]), narrow ? 0.98 : 0.92, win),
+      map: top(box(-cols / 2 - 5, cols / 2 + 5, -rows / 2 - 3.5, rows / 2 + 3.5, [-0.76])),
+      wide: top(box(-cols / 2 - 13, cols / 2 + 13, -rows / 2 - 9, rows / 2 + 9, [-0.76])),
+    };
+    const want = this.poses[this.poseName];
+    if (!this.pose || !this.camAnim) this.pose = { ...want, target: want.target.clone() };
+    else this.camAnim.to = this.poses[this.camAnim.name];
+    this._placeCam(this.pose);
+    this._labelsDirty = true;
     this.dirty = true;
+  }
+
+  /** A pose whose view holds `pts` within ±fx across and within the [bottom, top] window, in NDC. */
+  _fitPose(p, pts, fx, [bot, top]) {
+    const P = { ...p, target: p.target.clone(), dist: 30 };
+    const v = new THREE.Vector3(), up = new THREE.Vector3(), right = new THREE.Vector3();
+    const tanH = Math.tan((this.cam.fov * Math.PI) / 360);
+    for (let it = 0; it < 8; it++) {
+      this._placeCam(P);
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+      for (const q of pts) {
+        v.copy(q).project(this.cam);
+        x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x);
+        y0 = Math.min(y0, v.y); y1 = Math.max(y1, v.y);
+      }
+      P.dist *= Math.max((x1 - x0) / (2 * fx), (y1 - y0) / (top - bot));
+      // then slide the view so the box sits in its window
+      up.set(0, 1, 0).applyQuaternion(this.cam.quaternion);
+      right.set(1, 0, 0).applyQuaternion(this.cam.quaternion);
+      P.target.addScaledVector(up, ((y0 + y1) / 2 - (top + bot) / 2) * P.dist * tanH)
+        .addScaledVector(right, ((x0 + x1) / 2) * P.dist * tanH * this.cam.aspect);
+    }
+    return P;
+  }
+
+  _placeCam(p) {
+    const cam = this.cam;
+    cam.position.set(p.dist * Math.cos(p.elev) * Math.sin(p.azim), p.dist * Math.sin(p.elev),
+      p.dist * Math.cos(p.elev) * Math.cos(p.azim)).add(p.target);
+    cam.lookAt(p.target);
+    cam.updateMatrixWorld();
+  }
+
+  /** Change the view; between the map and the board the camera flies and the trees rise or sink. */
+  _setView(v) {
+    this.view = v;
+    this._viewBtns();
+    const want = v === 'map' ? 'map' : 'board';
+    if (this.poses && this.poseName !== want) this._fly(want, 1700, want === 'board' || this.poseName === 'board');
+    this._draw();
+  }
+
+  /** Fly the camera to a named pose; `arc` lifts it on the way, between the map and the board. */
+  _fly(name, ms, arc = false) {
+    this.poseName = name;
+    this.camAnim = { name, arc, from: { ...this.pose, target: this.pose.target.clone() }, to: this.poses[name],
+      t0: performance.now(), ms: this.reduced ? 0 : ms };
+    this._draw();
+  }
+
+  /** The globe in the corner, turned to the block. */
+  _place() {
+    const m = this.meta;
+    const lat = m.lat0 - ((m.rows - 1) / 2) * m.res_deg, lon = m.lon0 + ((m.cols - 1) / 2) * m.res_deg;
+    const cv = this.$('#tw-globe');
+    if (cv) new Locator(cv, this.$('#tw-pin')).flyTo(lat, lon, 0);
   }
 
   /* ------------------------------------------------------------ the trees */
@@ -327,7 +400,7 @@ class Twin {
       if (c.free) {
         const t = this.reduced || c.born < 0 ? 1 : clamp01((now - c.born) / GROW_MS);
         if (t < 1) growing = true;
-        grow = easeOut(t);
+        grow = easeOut(t) * this.treeK;
       }
       const hF = c.free ? at(c.free, y, 0) : 0;
       const hA = c.act ? at(c.act, y, 0) : hF;
@@ -359,7 +432,7 @@ class Twin {
             s.set(0.05, h * 0.5, 0.05);
             this.trunks.setColorAt(idx, SNAG);
           } else {
-            s.set(0.12, 0.06, 0.12);
+            s.set(0.12, 0.06 * this.treeK, 0.12);
             this.trunks.setColorAt(idx, STUMP);
           }
           this.trunks.setMatrixAt(idx, m.compose(p, q, s));
@@ -368,7 +441,7 @@ class Twin {
           continue;
         }
         const hh = h * (1 - gone);
-        const cw = 0.24 * t.wid * Math.min(1, 0.5 + 0.5 * hh / TREE_H);
+        const cw = 0.24 * t.wid * Math.min(1, 0.5 + 0.5 * hh / TREE_H) * Math.min(1, this.treeK * 3);
         if (t.emergent) {
           // a tall bole under a broad, flat crown
           s.set(0.055, hh * 0.84, 0.055);
@@ -398,12 +471,16 @@ class Twin {
   _frames() {
     const { m, c: col } = this._tmp;
     let n = 0;
+    const mix = this.slabMix.array;
     for (const c of this.cells) {
-      // bare earth where the stand has been cleared, a hint of the tool's colour under any edit
-      col.copy(FLOOR).lerp(EARTH, Math.min(1, (c.cleared || 0) * 1.7));
+      // bare earth where the stand has been cleared, a hint of the tool's colour under any edit;
+      // on the tile's top these tint the satellite image rather than replace it
+      const bare = Math.min(1, (c.cleared || 0) * 1.7);
+      col.copy(FLOOR).lerp(EARTH, bare);
       const tint = c.edit ? TOOL_COLOR[c.edit.tool] : null;
       if (tint) col.lerp(tint, 0.12);
       this.slabs.setColorAt(c.i, col);
+      mix[c.i] = Math.min(1, bare * 0.85 + (tint ? 0.14 : 0));
       if (!c.edit) continue;
       const [x, z] = this._xz(c);
       this.frames.setMatrixAt(n, m.makeTranslation(x, 0, z));
@@ -419,6 +496,7 @@ class Twin {
     this.frames.instanceMatrix.needsUpdate = true;
     if (this.frames.instanceColor) this.frames.instanceColor.needsUpdate = true;
     this.slabs.instanceColor.needsUpdate = true;
+    this.slabMix.needsUpdate = true;
   }
 
   /* ------------------------------------------------------------ the loop */
@@ -429,16 +507,49 @@ class Twin {
 
   _loop(now) {
     this.raf = 0;
+    const dt = Math.min(0.1, Math.max(0, (now - (this._last || now)) / 1000));
+    this._last = now;
     if (this.playing) {
       const y = this.playFrom + (now - this.playT0) / YEAR_MS;
       if (y >= YEARS - 1) { this.playing = false; this._setYear(YEARS - 1); this._playBtn(); }
       else this._setYear(y);
     }
+    let moving = false;
+    if (this.camAnim) {
+      const a = this.camAnim;
+      const u = a.ms ? clamp01((now - a.t0) / a.ms) : 1;
+      const e = u < 0.5 ? 4 * u * u * u : 1 - (-2 * u + 2) ** 3 / 2;
+      const P = this.pose;
+      P.azim = a.from.azim + (a.to.azim - a.from.azim) * e;
+      P.elev = a.from.elev + (a.to.elev - a.from.elev) * e;
+      // fly out and back in, rather than straight across
+      P.dist = (a.from.dist + (a.to.dist - a.from.dist) * e) * (a.arc ? 1 + 0.12 * Math.sin(Math.PI * e) : 1);
+      P.target.lerpVectors(a.from.target, a.to.target, e);
+      this._placeCam(P);
+      if (u >= 1) this.camAnim = null;
+      this._labelsDirty = true;
+      moving = true;
+    }
+    const kTo = this.view === 'map' ? 0 : 1;
+    if (this.treeK !== kTo) {
+      const step = this.reduced ? 1 : dt / 0.9;
+      this.treeK = kTo > this.treeK ? Math.min(kTo, this.treeK + step) : Math.max(kTo, this.treeK - step);
+      this._labelsDirty = true;
+      moving = true;
+    }
+    if (this.geo.uCtx) this.geo.uCtx.uBright.value = 0.5 + 0.38 * (1 - this.treeK);
+    this.geo.uGain.value = 1.35 + 0.5 * (1 - this.treeK);      // the photograph reads brighter as a map
     const growing = this._trees(now);
     this._frames();
+    if (this._labelsDirty && this.geo.ready) {
+      const cv = this.renderer.domElement;
+      this.geo.place(this.cam, cv.clientWidth, cv.clientHeight, this.view, this.treeK);
+      this._labelsDirty = false;
+    }
     this.renderer.render(this.scene, this.cam);
     this.dirty = false;
-    if (this.visible && (this.playing || growing || this.dirty)) this.raf = requestAnimationFrame(this._loop);
+    if (this.visible && (this.playing || growing || moving || this.dirty)) this.raf = requestAnimationFrame(this._loop);
+    else this._last = 0;
   }
 
   _draw() {
@@ -495,7 +606,7 @@ class Twin {
       c.born = performance.now();
       this.nFree += 1;
       if (c.deferred) this._run([c]);
-      if (this.nFree < this.nForest) {
+      if (this.nFree < this.nForest && !this._introOn) {
         this._status(`Simulating ${this.nForest} forest cells, 1981–2021… ${this.nFree}/${this.nForest}`, true);
       }
     } else if (v === c.v) {
@@ -514,8 +625,9 @@ class Twin {
     this.root.dataset.state = 'ready';
     if (first) {
       const s = (performance.now() - this.t0) / 1000;
-      this._status(`Live · ${this.nForest} cells, ${this.nForest + this.runN0} forty-year runs ` +
-        `in ${s.toFixed(1)} s on ${this.pool.size} worker${this.pool.size > 1 ? 's' : ''}`);
+      this._liveMsg = `Live · ${this.nForest} cells, ${this.nForest + this.runN0} forty-year runs ` +
+        `in ${s.toFixed(1)} s on ${this.pool.size} worker${this.pool.size > 1 ? 's' : ''}`;
+      if (!this._introOn) this._status(this._liveMsg);
       this._play(0);
     } else if (this.runT0) {
       const s = (performance.now() - this.runT0) / 1000;
@@ -713,9 +825,8 @@ class Twin {
     this._brushBtns();
     for (const b of this.root.querySelectorAll('[data-view]')) {
       b.addEventListener('click', () => {
-        this.view = b.dataset.view;
-        this._viewBtns();
-        this._draw();
+        this.viewTouched = true;
+        this._setView(b.dataset.view);
       });
     }
     this._viewBtns();
@@ -728,6 +839,7 @@ class Twin {
       b.setAttribute('aria-pressed', String(on));
     }
     this.$('#tw-legend').hidden = this.view !== 'change';
+    this.root.dataset.view = this.view;
   }
 
   _setTool(id) {
@@ -758,7 +870,9 @@ class Twin {
     const hF = c.free[y * 7], hA = c.act ? c.act[y * 7] : null;
     const ns = c.lat >= 0 ? 'N' : 'S', ew = c.lon >= 0 ? 'E' : 'W';
     const what = c.edit ? `${TOOL[c.edit.tool].label} in ${YEAR0 + c.edit.year}` : 'No action';
+    const near = this.geo.nearest(c.lat, c.lon);
     tip.innerHTML = `<b>${Math.abs(c.lat).toFixed(2)}°${ns} ${Math.abs(c.lon).toFixed(2)}°${ew}</b>` +
+      (near ? `<i>${near.km < 30 ? 'At' : `${Math.round(near.km / 5) * 5} km from`} ${near.name}, ${near.country}</i>` : '') +
       `<span>${what}${c.split ? ` · a paper ${c.split} cell` : ''}</span>` +
       `<span>Canopy, ${YEAR0 + y}: ${hA != null ? `${hA.toFixed(1)} m <i>vs ${hF.toFixed(1)} m</i>` : `${hF.toFixed(1)} m`}</span>`;
     tip.hidden = false;
@@ -767,6 +881,22 @@ class Twin {
     const tw = tip.offsetWidth, th = tip.offsetHeight;
     tip.style.left = `${Math.min(v.width - tw - 8, x + 16)}px`;
     tip.style.top = `${Math.max(8, yy - th - 12)}px`;
+  }
+
+  /** The first look: where on Earth this is, from above; then down onto the board. */
+  _intro() {
+    this.introDone = true;
+    if (this.view !== 'map') return;
+    this._introOn = true;
+    this._status('Western Amazon, where Brazil, Colombia and Peru meet');
+    // down from the region onto the block, a moment to read it, then onto the board
+    if (!this.viewTouched) this._fly('map', 2200);
+    setTimeout(() => {
+      this._introOn = false;
+      if (!this.viewTouched) this._setView('forest');
+      if (this.nFree < this.nForest) this._status(`Simulating ${this.nForest} forest cells, 1981–2021… ${this.nFree}/${this.nForest}`, true);
+      else if (this._liveMsg) this._status(this._liveMsg);
+    }, 4200);
   }
 
   _wire() {
@@ -844,6 +974,7 @@ class Twin {
     // the first play waits until the board is mostly on screen
     new IntersectionObserver(([en]) => {
       this.seen = en.isIntersecting;
+      if (this.seen && !this.introDone) this._intro();
       if (this.seen && this.pendingPlay != null) {
         const from = this.pendingPlay;
         this.pendingPlay = null;

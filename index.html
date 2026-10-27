@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#000000">
 <title>Earth System World Model — What-If Simulations for Terrestrial Ecosystems</title>
 <meta name="description" content="Cut a forest down. Plant it back. The paper's world model predicts the whole ecosystem's response — live in your browser.">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
@@ -14,7 +16,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
@@ -23,7 +25,7 @@
 
 <header class="nav" id="nav">
   <a class="nav-mark" href="#top"><span class="mark" aria-hidden="true"></span> Earth System World Model</a>
-  <nav class="nav-links">
+  <nav class="nav-links" aria-label="Sections">
     <a href="#try">Try it</a>
     <a href="#why">Why</a>
     <a href="#twin">Landscape</a>
@@ -41,18 +43,20 @@
 
   <div class="hero-inner">
     <p class="eyebrow">ACM SIGSPATIAL 2026</p>
-    <h1>
-      Forecasts tell you<br>what <em>will</em> happen.<br>
-      <span class="h1-2">World models answer <em>what if</em>.</span>
-    </h1>
+    <h1>Forecasts tell you what <em>will</em> happen. <span class="h1-2">World models answer <em>what if</em>.</span></h1>
     <p class="lede">
-      Log this forest. Burn it. Plant it back. The model predicts how the whole
-      ecosystem responds — running live in your browser.
+      Log this forest. Burn it. Plant it back. The paper's world model predicts how the whole
+      ecosystem responds, running live in your browser.
     </p>
     <div class="hero-cta">
       <a class="btn btn-primary btn-lg" href="#try">Try it</a>
       <a class="btn btn-lg" href="https://arxiv.org/abs/2609.08855">Read the paper</a>
     </div>
+    <p class="hero-by">
+      Zhihao Wang, Ruichen Wang, Ruohan Li, Lei Ma, George Hurtt, Xiaowei Jia, Gengchen Mai,
+      Shaowen Wang, Yiqun Xie
+      <span>University of Maryland · Rutgers University · UT Austin · UIUC</span>
+    </p>
     <p class="hero-note" id="boot-note">
       <span class="dot" aria-hidden="true"></span>
       <span id="boot-text">Loading the model…</span>
@@ -62,11 +66,18 @@
   <div class="hero-scroll" aria-hidden="true"><span></span></div>
 </section>
 
-<!-- ───────────────────────────────────────────────────────────── the demo -->
-<section class="band band-try" id="try">
+<main>
+<!-- ───────────────────────────────────────────────────────────── 01 the demo -->
+<section class="sec" id="try">
   <div class="wrap">
-    <p class="kicker">The model, live</p>
-    <h2>Do something to this forest</h2>
+    <header class="sec-head">
+      <p class="kicker"><span>01</span>The model, live</p>
+      <h2>Do something to <em>this forest</em>.</h2>
+      <p class="sec-lede">
+        Pick an action and a year. The model reruns forty years of this site's real climate, and
+        the forest you chose grows beside the one left alone.
+      </p>
+    </header>
 
     <div class="lab" id="lab-root" data-state="loading">
 
@@ -87,7 +98,7 @@
       </div>
 
       <p class="warn" id="extrap-warn" hidden>
-        Outside the six regions the model was trained on — exploratory, not a validated result.
+        Outside the six regions the model was trained on: exploratory, not a validated result.
       </p>
 
       <div class="stage" id="stage">
@@ -106,6 +117,12 @@
             <span class="loc-pin" id="loc-pin" aria-hidden="true"></span>
           </div>
         </div>
+        <p class="stage-key" aria-hidden="true">
+          <span><i class="sw sw-free"></i>No action</span>
+          <span><i class="sw sw-act"></i>Your scenario</span>
+          <span><i class="sw-ghost"></i>Canopy lost</span>
+          <span><i class="sw-gain"></i>Extra growth</span>
+        </p>
         <button class="replay" id="btn-replay" type="button">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4v4.2h4.2"/></svg>
           Replay
@@ -131,48 +148,52 @@
       </div>
 
       <div class="answer">
-        <p class="key">
-          <span id="key-act"><i class="sw sw-act"></i>Your scenario</span>
-          <span><i class="sw sw-free"></i>No action</span>
-          <span><i class="sw sw-ed"></i>ED simulation</span>
-        </p>
+        <div class="answer-head">
+          <p class="answer-t">The response</p>
+          <p class="key">
+            <span id="key-act"><i class="sw sw-act"></i>Your scenario</span>
+            <span><i class="sw sw-free"></i>No action</span>
+            <span><i class="sw sw-ed"></i>ED simulation</span>
+          </p>
+        </div>
         <div class="chart-pair" id="chart-grid"></div>
         <p class="chips-cap"><span id="chips-what">Change from no action</span> · <b id="chips-year">2021</b></p>
         <div class="chips" id="chips"></div>
+        <p class="compute" id="compute-note"></p>
       </div>
-
-      <p class="compute" id="compute-note"></p>
     </div>
 
     <details class="disclose">
       <summary>What is actually being computed?</summary>
       <div class="disclose-body">
         <p>
-          The paper's model — all 519,047 parameters — runs in this tab on that site's real
-          climate record, seeded by five years of the Ecosystem Demography simulation. An action
-          is a change in canopy height; the model infers everything else.
+          The paper's model, all 519,047 parameters, runs in this tab on that site's real climate
+          record, seeded by five years of the Ecosystem Demography simulation. An action is a change
+          in canopy height; the model infers everything else.
           <a href="tests.html">Verify it against the original PyTorch</a>.
         </p>
         <p>
-          Actions pass through a learned decoder, so a 2 m cut lands near 2.05 m, and the model
-          carries a disturbance forward rather than regrowing to the undisturbed line. Values are
-          December states. The paper covers the rest.
+          The forest is drawn from the predicted canopy height: trees still standing match the plot
+          left alone, a loss is trees removed, and any recovery the model predicts grows back in the
+          gaps. Which trees go, and the props, are illustration. Actions pass through a learned
+          decoder, so a 2 m cut lands near 2.05 m, and values are December states.
         </p>
       </div>
     </details>
   </div>
 </section>
 
-<!-- ───────────────────────────────────────────────────────────── why -->
-<section class="band band-why" id="why">
+<!-- ───────────────────────────────────────────────────────────── 02 why -->
+<section class="sec" id="why">
   <div class="wrap">
-    <p class="kicker">Why interactive</p>
-    <h2>Emulators made Earth models fast.<br><span class="h2-2">But you can only <em>watch</em>.</span></h2>
-    <p class="section-lede">
-      Machine-learning emulators reproduce expensive simulators orders of magnitude faster. Like
-      early video generators, though, they only play back: climate in, trajectory out, with no
-      input for a decision. A digital twin has to answer <em>what if</em>.
-    </p>
+    <header class="sec-head">
+      <p class="kicker"><span>02</span>Why interactive</p>
+      <h2>Emulators made Earth models fast. <span class="h2-2">But you can only <em>watch</em>.</span></h2>
+      <p class="sec-lede">
+        An emulator replays a simulator under the climate it is given. Like early video generators,
+        it has no input for a decision, and a digital twin needs one to answer <em>what if</em>.
+      </p>
+    </header>
 
     <ol class="asks">
       <li class="ask">
@@ -182,7 +203,7 @@
           <circle class="now" cx="60" cy="22" r="4"/>
         </svg>
         <p class="ask-q">What now?</p>
-        <p class="ask-t"><b>Replica.</b> The system as observed.</p>
+        <p class="ask-t">A replica of the system as observed.</p>
       </li>
       <li class="ask">
         <svg class="ask-fig" viewBox="0 0 120 56" aria-hidden="true">
@@ -192,7 +213,7 @@
           <circle class="now" cx="60" cy="22" r="4"/>
         </svg>
         <p class="ask-q">What next?</p>
-        <p class="ask-t"><b>Forecast</b> under a given climate. Emulators made this fast.</p>
+        <p class="ask-t">A forecast under a given climate. Emulators made this fast.</p>
       </li>
       <li class="ask is-gap">
         <svg class="ask-fig" viewBox="0 0 120 56" aria-hidden="true">
@@ -204,7 +225,7 @@
           <circle class="now" cx="60" cy="22" r="4"/>
         </svg>
         <p class="ask-q">What if?</p>
-        <p class="ask-t"><b>Impact</b> of a decision: log, burn, replant. A passive emulator has no input for it.</p>
+        <p class="ask-t">The impact of a decision. A passive emulator has no input for it.</p>
       </li>
     </ol>
 
@@ -243,43 +264,38 @@
       </div>
     </div>
 
-    <div class="gains">
-      <div class="gain">
-        <h3>Explore</h3>
-        <p>Try a decision and see forty years of consequences in milliseconds, not a new simulation.</p>
-      </div>
-      <div class="gain">
-        <h3>Plan</h3>
-        <p>Ask the model as often as a search needs, to find yearly actions that reach a target.</p>
-      </div>
-      <div class="gain">
-        <h3>Stay coherent</h3>
-        <p>Edit canopy height; biomass, soil carbon and the fluxes respond with it.</p>
-      </div>
-    </div>
-    <p class="why-next">
+    <p class="sec-next">
       The hard part is learning actions from simulator runs that contain none.
       <a href="#how">How the model does it</a>
     </p>
   </div>
 </section>
 
-<!-- ───────────────────────────────────────────────────────────── the landscape -->
-<section class="band band-twin" id="twin">
+<!-- ───────────────────────────────────────────────────────────── 03 the landscape -->
+<section class="sec" id="twin">
   <div class="wrap">
-    <p class="kicker">Digital twin</p>
-    <h2>Now, a whole landscape</h2>
-    <p class="section-lede">
-      256 forest cells of the western Amazon, each one the paper's model running live in your
-      browser. Open a logging road, set a fire, replant — then press play.
-    </p>
+    <header class="sec-head">
+      <p class="kicker"><span>03</span>Digital twin</p>
+      <h2>Now, <em>a whole landscape</em>.</h2>
+      <p class="sec-lede">
+        256 forest cells of the western Amazon, where Brazil, Colombia and Peru meet, each one the
+        paper's model running live. Open a logging road, set a fire, replant, then press play.
+      </p>
+    </header>
 
     <div class="twin" id="twin-root" data-state="idle">
       <div class="tw-view">
         <canvas class="tw-canvas" id="tw-canvas" role="img"
-                aria-label="A 16 by 16 block of Amazon forest cells; the trees follow the canopy height the model predicts for each"></canvas>
+                aria-label="A 16 by 16 block of western Amazon forest cells on its satellite image; the trees follow the canopy height the model predicts for each"></canvas>
+        <div class="tw-labels" id="tw-labels" aria-hidden="true"></div>
         <div class="tw-hud">
-          <p class="tw-where">Western Amazon · 8° × 8° · 256 cells</p>
+          <div class="tw-where">
+            <div class="loc-wrap tw-loc">
+              <canvas class="loc" id="tw-globe" aria-hidden="true"></canvas>
+              <span class="loc-pin" id="tw-pin" aria-hidden="true"></span>
+            </div>
+            <p class="tw-place"><b>Western Amazon</b><span>2.5°N–5.5°S · 64.5–72.5°W</span></p>
+          </div>
           <p class="tw-year" id="tw-year">2021</p>
         </div>
         <div class="tw-carbon">
@@ -289,8 +305,9 @@
           <svg class="tw-c-chart" id="tw-c-chart" viewBox="0 0 200 48" preserveAspectRatio="none" aria-hidden="true"></svg>
         </div>
         <p class="tw-status" id="tw-status">Starts when you scroll here</p>
-        <div class="tw-views" role="group" aria-label="Colour the canopy by">
+        <div class="tw-views" role="group" aria-label="View">
           <span class="tw-legend" id="tw-legend" hidden><i></i>lower · higher than no action</span>
+          <button type="button" data-view="map">Map</button>
           <button type="button" data-view="forest">Forest</button>
           <button type="button" data-view="change">Change</button>
         </div>
@@ -320,45 +337,47 @@
         <span class="tw-span" aria-hidden="true"><i>1981</i><i>2021</i></span>
       </div>
     </div>
-    <p class="fine tw-fine">
-      Each cell runs on its own, as in the paper: nothing spreads between cells. 0.5° cells, inside
-      the paper's NW South America study region.
+    <p class="fine">
+      Each 0.5° cell (about 55 km) runs on its own, as in the paper: nothing spreads between cells.
+      Imagery: NASA Blue Marble. Rivers and towns: Natural Earth.
     </p>
   </div>
 </section>
 
-<!-- ───────────────────────────────────────────────────────────── how -->
-<section class="band band-alt" id="how">
+<!-- ───────────────────────────────────────────────────────────── 04 how -->
+<section class="sec" id="how">
   <div class="wrap">
-    <p class="kicker">How</p>
-    <h2>Emulators predict. This one takes orders.</h2>
-    <p class="section-lede">
-      Simulator runs contain no actions to learn from — so every observed change becomes one.
-    </p>
+    <header class="sec-head">
+      <p class="kicker"><span>04</span>How it works</p>
+      <h2>Emulators predict. <span class="h2-2">This one <em>takes orders</em>.</span></h2>
+      <p class="sec-lede">
+        Simulator runs contain no actions to learn from, so every observed change becomes one.
+      </p>
+    </header>
 
     <div class="steps">
       <article class="step">
         <p class="step-n">01</p>
         <h3>Actions for free</h3>
         <p>
-          If canopy height rose 0.4 m this year, call that a +0.4 m action. Label-free
-          supervision, from data that already exists.
+          If canopy height rose 0.4 m this year, call that a +0.4 m action: supervision from data
+          that already exists.
         </p>
       </article>
       <article class="step">
         <p class="step-n">02</p>
         <h3>A gate, not a hint</h3>
         <p>
-          Given an action, the gate hands height to it. Given none, a dynamics head predicts
-          growth. One model, both modes — so control costs no accuracy.
+          Given an action, the gate hands height to it; given none, a dynamics head predicts growth.
+          One model, both modes, so control costs no accuracy.
         </p>
       </article>
       <article class="step">
         <p class="step-n">03</p>
         <h3>The rest follows</h3>
         <p>
-          Edit height and the other variables go stale, so training masks them out. Biomass,
-          soil carbon and the fluxes are inferred from the edit.
+          Biomass, soil carbon and the fluxes go stale after an edit, so training masks them and the
+          model infers them from the new height.
         </p>
       </article>
     </div>
@@ -369,20 +388,26 @@
   </div>
 </section>
 
-<!-- ───────────────────────────────────────────────────────────── results -->
-<section class="band" id="results">
+<!-- ───────────────────────────────────────────────────────────── 05 results -->
+<section class="sec" id="results">
   <div class="wrap">
-    <p class="kicker">Results</p>
-    <h2>Controllable, and no less accurate</h2>
+    <header class="sec-head">
+      <p class="kicker"><span>05</span>Results</p>
+      <h2>Controllable, and <em>no less accurate</em>.</h2>
+      <p class="sec-lede">
+        Forty-year rollout error at held-out cells, over seven variables. The world model beats the
+        dedicated emulator at two of three stand ages and matches it at the third.
+      </p>
+    </header>
 
     <div class="stat-row">
       <div class="stat">
         <p class="stat-n">0.162</p>
-        <p class="stat-l">rRMSE, young <span>vs 0.180 baseline</span></p>
+        <p class="stat-l">rRMSE, young forest <span>vs 0.180 for the baseline</span></p>
       </div>
       <div class="stat">
         <p class="stat-n">0.189</p>
-        <p class="stat-l">rRMSE, intermediate <span>vs 0.211 baseline</span></p>
+        <p class="stat-l">rRMSE, intermediate <span>vs 0.211 for the baseline</span></p>
       </div>
       <div class="stat">
         <p class="stat-n">7</p>
@@ -390,19 +415,13 @@
       </div>
       <div class="stat">
         <p class="stat-n">519k</p>
-        <p class="stat-l">parameters <span>runs in a browser tab</span></p>
+        <p class="stat-l">parameters <span>run in a browser tab</span></p>
       </div>
     </div>
 
-    <p class="section-lede">
-      40-year rollout error at held-out cells, averaged over the seven variables. Lower is
-      better: the world model beats the dedicated emulator at two of three stand ages and
-      matches it at the third.
-    </p>
-
     <div class="table-scroll">
       <table class="tbl">
-        <caption>Table 1. Rollout mean rRMSE across 3 forest conditions.</caption>
+        <caption>Table 1. Rollout mean rRMSE across 3 forest conditions. Lower is better.</caption>
         <thead>
           <tr><th scope="col">Model</th><th scope="col" colspan="3">All time steps</th><th scope="col" colspan="3">Final time step</th></tr>
           <tr class="sub"><th scope="col"></th>
@@ -427,23 +446,33 @@
   </div>
 </section>
 
-<!-- ───────────────────────────────────────────────────────────── cite -->
-<section class="band band-alt" id="cite">
+<!-- ───────────────────────────────────────────────────────────── 06 paper -->
+<section class="sec" id="cite">
   <div class="wrap">
-    <p class="kicker">Paper</p>
-    <h2>Earth System World Model for What-If Simulations</h2>
-    <p class="cite-meta">
-      Zhihao Wang, Ruichen Wang, Ruohan Li, Lei Ma, George Hurtt, Xiaowei Jia, Gengchen Mai,
-      Shaowen Wang, Yiqun Xie · University of Maryland, Rutgers University, UT Austin, UIUC<br>
-      ACM SIGSPATIAL '26, Riverside, CA.
-    </p>
-    <p class="links">
-      <a class="btn" href="https://arxiv.org/abs/2609.08855">arXiv:2609.08855</a>
-      <a class="btn" href="https://doi.org/10.1145/3841645.3843371">DOI</a>
-      <a class="btn" href="https://zhwang0.github.io/carbon-globe-website/">CarbonGlobe data</a>
-      <button class="btn" id="btn-copy-bib">Copy BibTeX</button>
-    </p>
-    <pre class="bib" id="bib" hidden><code>@inproceedings{wang2026earth,
+    <header class="sec-head">
+      <p class="kicker"><span>06</span>Paper</p>
+      <h2>Earth System World Model for What-If Simulations</h2>
+      <p class="sec-lede">A Case Study for Terrestrial Ecosystems. ACM SIGSPATIAL '26, Riverside, CA.</p>
+    </header>
+    <div class="cite">
+      <div class="cite-who">
+        <p class="cite-authors">
+          Zhihao Wang, Ruichen Wang, Ruohan Li, Lei Ma, George Hurtt, Xiaowei Jia, Gengchen Mai,
+          Shaowen Wang, Yiqun Xie
+        </p>
+        <p class="cite-aff">University of Maryland · Rutgers University · UT Austin · UIUC</p>
+        <p class="links">
+          <a class="btn" href="https://arxiv.org/abs/2609.08855">arXiv:2609.08855</a>
+          <a class="btn" href="https://doi.org/10.1145/3841645.3843371">DOI</a>
+          <a class="btn" href="https://zhwang0.github.io/carbon-globe-website/">CarbonGlobe data</a>
+        </p>
+      </div>
+      <div class="bib-card">
+        <div class="bib-top">
+          <span>BibTeX</span>
+          <button class="btn btn-sm" id="btn-copy-bib" type="button">Copy</button>
+        </div>
+        <pre class="bib" id="bib"><code>@inproceedings{wang2026earth,
   title     = {Earth System World Model for What-If Simulations:
                A Case Study for Terrestrial Ecosystems},
   author    = {Wang, Zhihao and Wang, Ruichen and Li, Ruohan and
@@ -457,15 +486,18 @@
   publisher = {ACM},
   doi       = {10.1145/3841645.3843371}
 }</code></pre>
+      </div>
+    </div>
   </div>
 </section>
+</main>
 
 <footer class="foot">
   <div class="wrap">
     <p class="fine">
-      Simulations: Ecosystem Demography model, University of Maryland, via CarbonGlobe.
-      Earth imagery: NASA Blue Marble and Black Marble, public domain. three.js (MIT).
-      Everything runs in your browser; nothing you do here is sent anywhere.
+      Simulations: Ecosystem Demography model, University of Maryland, via CarbonGlobe. Imagery: NASA
+      Blue Marble and Black Marble, public domain. Rivers and towns: Natural Earth, public domain.
+      three.js (MIT). Everything runs in your browser; nothing you do here is sent anywhere.
     </p>
   </div>
 </footer>

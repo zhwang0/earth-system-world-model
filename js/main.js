@@ -141,7 +141,7 @@ function chrome() {
     const io = new IntersectionObserver((es) => {
       for (const e of es) if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
     }, { rootMargin: '0px 0px -10% 0px' });
-    for (const n of document.querySelectorAll('.band .wrap > *, .step, .stat')) {
+    for (const n of document.querySelectorAll('.sec .wrap > *')) {
       n.classList.add('rise');
       io.observe(n);
     }
@@ -153,10 +153,9 @@ function chrome() {
     try {
       await navigator.clipboard.writeText(pre.textContent.trim());
       copy.textContent = 'Copied';
-      setTimeout(() => { copy.textContent = 'Copy BibTeX'; }, 1600);
+      setTimeout(() => { copy.textContent = 'Copy'; }, 1600);
     } catch {
-      pre.hidden = false;              // no clipboard permission: just show it
-      copy.textContent = 'Select it above';
+      copy.textContent = 'Select it below';   // no clipboard permission: the text is on the page
     }
   });
 }

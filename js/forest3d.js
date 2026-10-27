@@ -99,24 +99,43 @@ const FRAG = {
     diffuseColor.rgb *= mix(0.7, 1.05, smoothstep(-0.3, 0.2, vLocal.y));`,
 };
 
+// Growth beyond the no-action stand: each crown carries, per instance, the height its no-action twin
+// reaches (aMark.x) and how strongly to show the difference (aMark.y). Above that height the
+// foliage turns lime and a bright contour rings the crown at the no-action level.
+const CAP_COLOR = /* glsl */ `
+    float capA = vWY - vMark.x;
+    float capK = vMark.y * smoothstep(0.0, uCapW * 2.5, capA);
+    diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.25, 1.55, 0.8) + vec3(0.03, 0.05, 0.0), capK * 0.75);`;
+const CAP_GLOW = /* glsl */ `
+    float capL = vMark.y * exp(-capA * capA / (uCapW * uCapW));
+    totalEmissiveRadiance += vec3(0.62, 1.0, 0.3) * (capK * 0.035 + capL * 0.75);`;
+
 function windify(mat, U, kind) {
+  const cap = kind !== 'bark';
   mat.onBeforeCompile = (sh) => {
     sh.uniforms.uTime = U.uTime;
     sh.uniforms.uWind = U.uWind;
     sh.uniforms.uHRef = U.uHRef;
+    sh.uniforms.uCapW = U.uCapW;
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', `#include <common>
 attribute vec2 aWind;
+attribute vec2 aMark;
 uniform float uTime;
 uniform float uWind;
 uniform float uHRef;
-varying vec3 vLocal;`)
+varying vec3 vLocal;
+varying vec2 vMark;
+varying float vWY;`)
       .replace('#include <begin_vertex>', `#include <begin_vertex>
 vLocal = position;
+vMark = aMark;
+vWY = 0.0;
 vec3 windOff = vec3(0.0);
 #ifdef USE_INSTANCING
 {
   vec3 wp = (instanceMatrix * vec4(transformed, 1.0)).xyz;
+  vWY = wp.y;
   float hh = clamp(wp.y / uHRef, 0.0, 1.6);
   float a = aWind.y * hh * hh * uWind;
   windOff = vec3(sin(uTime * 1.15 + aWind.x + wp.x * 0.05) + 0.3 * sin(uTime * 2.7 + aWind.x * 2.3),
@@ -141,10 +160,16 @@ gl_Position = projectionMatrix * mvPosition;`)
 #endif`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
+uniform float uCapW;
 varying vec3 vLocal;
+varying vec2 vMark;
+varying float vWY;
 ${GLSL_NOISE}`)
       .replace('#include <color_fragment>', `#include <color_fragment>
-${FRAG[kind]}`);
+${FRAG[kind]}
+${cap ? CAP_COLOR : ''}`)
+      .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+${cap ? CAP_GLOW : ''}`);
     if (kind === 'leaf') {
       // break the smooth ball into facets of light, as leaves do
       sh.fragmentShader = sh.fragmentShader.replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
@@ -240,6 +265,8 @@ class Batch {
     this.cap = cap;
     this.wind = new THREE.InstancedBufferAttribute(new Float32Array(cap * 2), 2).setUsage(THREE.DynamicDrawUsage);
     geo.setAttribute('aWind', this.wind);
+    this.mark = new THREE.InstancedBufferAttribute(new Float32Array(cap * 2), 2).setUsage(THREE.DynamicDrawUsage);
+    geo.setAttribute('aMark', this.mark);
     const m = this.mesh = new THREE.InstancedMesh(geo, mat, cap);
     m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(cap * 3), 3).setUsage(THREE.DynamicDrawUsage);
@@ -253,7 +280,7 @@ class Batch {
 
   begin() { this.n = 0; }
 
-  push(mat4, color, phase = 0, sway = 0) {
+  push(mat4, color, phase = 0, sway = 0, markY = 0, markK = 0) {
     const i = this.n;
     if (i >= this.cap) return;
     mat4.toArray(this.mesh.instanceMatrix.array, i * 16);
@@ -261,6 +288,8 @@ class Batch {
     c[i * 3] = color.r; c[i * 3 + 1] = color.g; c[i * 3 + 2] = color.b;
     this.wind.array[i * 2] = phase;
     this.wind.array[i * 2 + 1] = sway;
+    this.mark.array[i * 2] = markY;
+    this.mark.array[i * 2 + 1] = markK;
     this.n = i + 1;
   }
 
@@ -270,6 +299,82 @@ class Batch {
     m.instanceMatrix.needsUpdate = true;
     m.instanceColor.needsUpdate = true;
     this.wind.needsUpdate = true;
+    this.mark.needsUpdate = true;
+  }
+}
+
+/*
+ * The canopy a scenario took away, drawn where it would stand: a glass tree, rim-lit, with level
+ * lines climbing it. A depth pass first, so only its outer surface is shaded and the overlapping
+ * clumps of a crown read as one shape. Faint ghosts (still fading in) skip the depth pass, so they
+ * never hide smoke or each other.
+ */
+const GHOST_VS = /* glsl */ `
+uniform float uPass;
+varying vec3 vN;
+varying vec3 vP;
+varying float vFade;
+void main() {
+#ifdef USE_INSTANCING_COLOR
+  vFade = instanceColor.r;
+#else
+  vFade = 1.0;
+#endif
+  mat4 m = modelMatrix * instanceMatrix;
+  vec4 p = m * vec4(position, 1.0);
+  vP = p.xyz;
+  vN = normalize(transpose(inverse(mat3(m))) * normal);
+  gl_Position = projectionMatrix * viewMatrix * p;
+  if (uPass > 0.5 && vFade < 0.4) gl_Position = vec4(0.0, 0.0, -2.0, 1.0);
+}`;
+const GHOST_FS = /* glsl */ `
+uniform vec3 uColor;
+uniform float uTime;
+uniform float uScan;
+varying vec3 vN;
+varying vec3 vP;
+varying float vFade;
+void main() {
+  vec3 V = normalize(cameraPosition - vP);
+  float f = 1.0 - abs(dot(normalize(vN), V));
+  float scan = smoothstep(0.8, 1.0, fract(vP.y * uScan - uTime * 0.4));
+  float a = vFade * (0.16 + 0.78 * f * f * f + 0.36 * scan);
+  gl_FragColor = vec4(uColor * (0.9 + 0.6 * f), min(1.0, a));
+}`;
+
+class GhostBatch {
+  constructor(scene, geo, cap, depth, color) {
+    this.cap = cap;
+    this.a = new THREE.InstancedMesh(geo, depth, cap);
+    this.b = new THREE.InstancedMesh(geo, color, cap);
+    this.a.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.a.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(cap * 3), 3).setUsage(THREE.DynamicDrawUsage);
+    this.b.instanceMatrix = this.a.instanceMatrix;
+    this.b.instanceColor = this.a.instanceColor;
+    this.a.renderOrder = 1;          // after the trees, among the opaque
+    this.b.renderOrder = 3;
+    for (const m of [this.a, this.b]) {
+      m.frustumCulled = false;
+      m.count = 0;
+      scene.add(m);
+    }
+    this.n = 0;
+  }
+
+  begin() { this.n = 0; }
+
+  push(mat4, fade) {
+    const i = this.n;
+    if (i >= this.cap) return;
+    mat4.toArray(this.a.instanceMatrix.array, i * 16);
+    this.a.instanceColor.array[i * 3] = fade;
+    this.n = i + 1;
+  }
+
+  end() {
+    this.a.count = this.b.count = this.n;
+    this.a.instanceMatrix.needsUpdate = true;
+    this.a.instanceColor.needsUpdate = true;
   }
 }
 
@@ -442,7 +547,27 @@ function template(kind, biome, rand) {
     }
   }
   for (const p of parts) p.m.toArray(p.a = new Float32Array(16));
-  return { parts, trunkR, crownR };
+  // the crown's top, in tree units: where growth beyond the no-action stand starts to show
+  const boxes = partBoxes();
+  let top = 0;
+  for (const p of parts) {
+    if (p.role === CROWN || p.role === HUB) top = Math.max(top, _box.copy(boxes[p.b]).applyMatrix4(p.m).max.y);
+  }
+  return { parts, trunkR, crownR, top: top || 1 };
+}
+
+const _box = new THREE.Box3();
+let _boxes = null;
+/** Each batch shape's bounds in its own units, measured once. */
+function partBoxes() {
+  if (_boxes) return _boxes;
+  _boxes = [];
+  for (const [b, g] of [[WOOD, woodGeometry()], [POST, postGeometry()], [BLOB, blobGeometry(true)], [CONE, coneGeometry()], [FROND, frondGeometry()]]) {
+    g.computeBoundingBox();
+    _boxes[b] = g.boundingBox.clone();
+    g.dispose();
+  }
+  return _boxes;
 }
 
 /* ------------------------------------------------------------------ layout */
@@ -683,12 +808,16 @@ const SLASH = col(0x7a5a3a), TUBE = col(0xe2e9de), SAPLING = col(0x86c24f), POST
 const PAINT = col(0xff7a1a), TAPE = col(0xff4f1f), ROCK = col(0x7d7a72), LOGC = col(0x5a4636), MOSS = col(0x4c6b34);
 const PICK = col(0xff9d52);
 const BARE = col(0x6a4a30), BARE_B = col(0x5e4a33), GREEN = col(0x5f7d34), GREEN_B = col(0x7d8a4c);
+const NO_MARK = [0, 0];
 
 export class Forest {
   constructor(scene, { light = false } = {}) {
     this.scene = scene;
     this.light = light;
-    this.U = { uTime: { value: 0 }, uWind: { value: 0.35 }, uHRef: { value: 30 } };
+    this.U = {
+      uTime: { value: 0 }, uWind: { value: 0.35 }, uHRef: { value: 30 }, uCapW: { value: 0.3 },
+      uGhost: { value: new THREE.Color(0xb4f5e6) }, uScan: { value: 1 },
+    };
     const wood = new THREE.MeshStandardMaterial({ roughness: 0.92, metalness: 0 });
     const leaf = new THREE.MeshStandardMaterial({ roughness: 0.82, metalness: 0 });
     const frond = new THREE.MeshStandardMaterial({ roughness: 0.78, metalness: 0, side: THREE.DoubleSide });
@@ -703,17 +832,32 @@ export class Forest {
       new Batch(scene, coneGeometry(), leaf, Math.round(900 * capT)),
       new Batch(scene, frondGeometry(), frond, Math.round(1500 * capT)),
     ];
+    // one program for both passes (only uniforms differ), so the colour pass meets the depth exactly
+    const ghost = (pass) => new THREE.ShaderMaterial({
+      uniforms: { uPass: { value: pass }, uColor: this.U.uGhost, uTime: this.U.uTime, uScan: this.U.uScan },
+      vertexShader: GHOST_VS, fragmentShader: GHOST_FS,
+      transparent: !pass, depthWrite: !!pass, colorWrite: !pass, depthFunc: THREE.LessEqualDepth,
+    });
+    const gf = ghost(1), gb = ghost(0);
+    const capG = light ? 700 : 1400;
+    this.ghost = [];
+    for (const [b, n] of [[WOOD, capG], [BLOB, capG], [CONE, capG / 2], [FROND, capG]]) {
+      this.ghost[b] = new GhostBatch(scene, this.batch[b].mesh.geometry, n, gf, gb);
+    }
     this.plots = [new Plot(scene), new Plot(scene)];
+    this._mk = NO_MARK;
   }
 
   setLayout(L, hTop) {
     this.L = L;
     this.U.uHRef.value = Math.max(8, L.Hc);
+    this.U.uCapW.value = 0.3 * Math.max(0.6, L.Hc / 30);
+    this.U.uScan.value = 1.6 / Math.max(0.6, L.Hc / 30);
     for (const p of this.plots) p.build(L, hTop);
   }
 
-  begin() { for (const b of this.batch) b.begin(); }
-  end() { for (const b of this.batch) b.end(); }
+  begin() { for (const b of this.batch) b.begin(); for (const g of this.ghost) g?.begin(); }
+  end() { for (const b of this.batch) b.end(); for (const g of this.ghost) g?.end(); }
 
   /** Draw one plot at time t. `o` is the plot's origin; `plan` its scenario (or the free run). */
   pose(k, o, plan, t, fx, dt, opts = {}) {
@@ -738,6 +882,11 @@ export class Forest {
       }
     }
 
+    // what the difference looks like on the trees: a lime cap where the stand outgrew no action,
+    // a ghost where it fell short of it (every standing tree, if they all came out shorter)
+    const gain = kStand > 1 ? clamp01((kStand - 1) / 0.025) : 0;
+    const short = kStand < 0.985 ? 0.7 * clamp01((1 - kStand) / 0.05) : 0;
+
     const fire = { x: 0, y: 0, z: 0, w: 0 };
     for (let i = 0; i < L.trees.length; i++) {
       const tr = L.trees[i];
@@ -745,7 +894,17 @@ export class Forest {
       const f = g >= 0 ? plan.felled[g] : null;
       const bx = o.x + tr.x, bz = o.z + tr.z, by = o.y;
       const h0 = tr.r * Hf;
-      if (!f) { this._tree(tr, bx, by, bz, Math.max(0.05, h0 * kStand), 1, 0, null, 1); continue; }
+      if (!f) {
+        if (gain) this._mk = [by + tr.top * h0, gain];
+        this._tree(tr, bx, by, bz, Math.max(0.05, h0 * kStand), 1, 0, null, 1);
+        this._mk = NO_MARK;
+        if (short) this._ghostTree(tr, bx, by, bz, h0, short);
+        continue;
+      }
+      // the tree it would have been, once this one is down
+      const gone = plan.mode === 'cut' ? smooth(f.fall + f.dur * 0.6, f.fall + f.dur + 0.3, t)
+        : smooth(f.ignite + 0.1, f.ignite + 0.42, t);
+      if (gone > 0) this._ghostTree(tr, bx, by, bz, h0, gone);
 
       if (plan.mode === 'cut') {
         const hCut = tr.r * at(plan.free, f.fall);
@@ -846,11 +1005,21 @@ export class Forest {
     return _mt;
   }
 
+  /** The no-action twin of a tree, as a ghost: `fade` from 0 (none) to 1. */
+  _ghostTree(tr, bx, by, bz, h, fade) {
+    const M = this._treeMatrix(tr, bx, by, bz, h, 1, tr.lean || 0, tr.leanDir || 0);
+    for (const p of tr.parts) {
+      const G = this.ghost[p.b];
+      if (G) G.push(_mp.multiplyMatrices(M, _m.fromArray(p.a)), fade);
+    }
+  }
+
   _tree(tr, bx, by, bz, h, shrink, ang, dir, sway, burn = null, pick = 0) {
     const M = ang ? this._treeMatrix(tr, bx, by, bz, h, shrink, ang, dir)
       : this._treeMatrix(tr, bx, by, bz, h, shrink, tr.lean || 0, tr.leanDir || 0);
     const B = this.batch;
     const swayAmt = ang ? 0 : sway;
+    const [mY, mK] = this._mk;
     for (const p of tr.parts) {
       if (burn && (p.role === CROWN || p.role === HUB)) {
         if (burn.crown < 0.02) continue;
@@ -875,7 +1044,7 @@ export class Forest {
         continue;
       }
       const c = pick > 0 && (p.role === CROWN || p.role === HUB) ? _c.copy(p.c).lerp(PICK, pick) : p.c;
-      B[p.b].push(_mp.multiplyMatrices(M, _m.fromArray(p.a)), c, tr.phase, swayAmt);
+      B[p.b].push(_mp.multiplyMatrices(M, _m.fromArray(p.a)), c, tr.phase, swayAmt, mY, mK);
     }
   }
 
@@ -1185,55 +1354,31 @@ class Plot {
     slab.castShadow = true;
     this.group.add(slab);
 
-    // the measuring wall behind: a faint grid, the canopy levels
-    const wall = new THREE.Group();
-    const Hw = hTop * 1.08;
-    const step = hTop > 36 ? 10 : 5;
-    const lines = [];
-    for (let y = step; y < Hw; y += step) lines.push(-W / 2, y, 0, W / 2, y, 0);
-    const lg = new THREE.BufferGeometry();
-    lg.setAttribute('position', new THREE.Float32BufferAttribute(lines, 3));
-    wall.add(new THREE.LineSegments(lg, new THREE.LineBasicMaterial({
-      color: 0xdfe9e3, transparent: true, opacity: 0.09, depthWrite: false, toneMapped: false })));
-    const pane = new THREE.Mesh(new THREE.PlaneGeometry(W, Hw).translate(0, Hw / 2, 0),
-      new THREE.MeshBasicMaterial({ color: 0xdfe9e3, transparent: true, opacity: 0.018, depthWrite: false, toneMapped: false }));
-    wall.add(pane);
-    const levelGeo = new THREE.PlaneGeometry(W, 1);
-    const dash = dashTexture();
-    dash.repeat.set(W / 2.2, 1);
-    this.lvlFree = new THREE.Mesh(levelGeo, new THREE.MeshBasicMaterial({
-      color: 0x4fbb8a, map: dash, transparent: true, opacity: 0.95, depthWrite: false, toneMapped: false }));
-    this.lvlAct = new THREE.Mesh(levelGeo, new THREE.MeshBasicMaterial({
-      color: 0xf2994a, transparent: true, opacity: 1, depthWrite: false, toneMapped: false }));
-    this.band = new THREE.Mesh(new THREE.PlaneGeometry(W, 1).translate(0, 0.5, 0), new THREE.MeshBasicMaterial({
-      color: 0xf2994a, transparent: true, opacity: 0.16, depthWrite: false, toneMapped: false }));
-    // the levels read through the trees in front of the wall: they are a measurement, not scenery
-    for (const m of [this.lvlFree, this.lvlAct, this.band]) {
-      m.position.z = 0.05;
-      m.material.depthTest = false;
-      m.renderOrder = 5;
-      wall.add(m);
-    }
-    this.band.renderOrder = 4;
-    wall.position.z = -D / 2 - 0.9;
-    this.wall = wall;
-    this.group.add(wall);
+    // the canopy levels, as rails around the plot at the height its trees average: no action
+    // dashed, this plot's own solid, the gap between them filled. They read through the trees:
+    // they are a measurement, not scenery.
+    this.railFree = rail(W, D, 0x7fe3b2, true);
+    this.railAct = rail(W, D, 0xf2994a, false);
+    this.gap = sides(W, D, new THREE.MeshBasicMaterial({
+      color: 0xf2994a, transparent: true, opacity: 0.2, depthWrite: false, depthTest: false, toneMapped: false, side: THREE.DoubleSide }));
+    this.gap.renderOrder = 5;
+    this.group.add(this.railFree, this.railAct, this.gap);
     this.W = W; this.D = D;
   }
 
-  /** The canopy levels on the wall: no action (dashed) and this plot's own (solid). */
+  /** The canopy levels: no action (dashed) and this plot's own (solid), with the gap filled. */
   levels(Hf, Ha, act, thick) {
-    this.lvlFree.visible = true;
-    this.lvlFree.position.y = Hf;
-    this.lvlFree.scale.y = thick;
-    this.lvlAct.visible = act;
-    this.band.visible = act && Math.abs(Ha - Hf) > 0.02;
+    const open = act && Math.abs(Ha - Hf) > 0.02;
+    this.railFree.position.y = Hf;
+    this.railFree.scale.y = thick * 1.4;
+    this.railAct.visible = act;
+    this.gap.visible = open;
     if (act) {
-      this.lvlAct.position.y = Ha;
-      this.lvlAct.scale.y = thick * 1.35;
-      this.band.position.y = Math.min(Ha, Hf);
-      this.band.scale.y = Math.max(0.001, Math.abs(Ha - Hf));
-      this.band.material.color.set(Ha < Hf ? 0xf2994a : 0x9ce07a);
+      this.railAct.position.y = Ha;
+      this.railAct.scale.y = thick * 1.9;
+      this.gap.position.y = Math.min(Ha, Hf);
+      this.gap.scale.y = Math.max(0.001, Math.abs(Ha - Hf));
+      this.gap.userData.mat.color.set(Ha < Hf ? 0xf2994a : 0x9ce07a);
     }
   }
 
@@ -1297,6 +1442,43 @@ class Plot {
     }
     this.marks = { plan, vi: Int32Array.from(vi), fi: Int32Array.from(fi), w: Float32Array.from(w) };
   }
+}
+
+/** Four upright quads on the edges of a W x D plot, one unit tall from y = 0 (scaled to size). */
+function sides(W, D, mat) {
+  const g = new THREE.Group();
+  const gw = new THREE.PlaneGeometry(W, 1).translate(0, 0.5, 0);
+  const gd = new THREE.PlaneGeometry(D, 1).translate(0, 0.5, 0);
+  for (const [geo, x, z, ry] of [[gw, 0, D / 2, 0], [gw, 0, -D / 2, 0], [gd, -W / 2, 0, Math.PI / 2], [gd, W / 2, 0, Math.PI / 2]]) {
+    const q = new THREE.Mesh(geo, mat);
+    q.position.set(x, 0, z);
+    q.rotation.y = ry;
+    q.renderOrder = 5;
+    g.add(q);
+  }
+  g.userData.mat = mat;
+  return g;
+}
+
+/** A level drawn around the plot's edges, centred on y = 0 and one unit thick. */
+function rail(W, D, color, dashed) {
+  const g = new THREE.Group();
+  const mk = (len) => {
+    const m = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: dashed ? 0.95 : 1,
+      depthWrite: false, depthTest: false, toneMapped: false, side: THREE.DoubleSide });
+    if (dashed) { m.map = dashTexture(); m.map.repeat.set(len / 2.2, 1); }
+    return m;
+  };
+  const mW = mk(W), mD = mk(D);
+  const gw = new THREE.PlaneGeometry(W, 1), gd = new THREE.PlaneGeometry(D, 1);
+  for (const [geo, mat, x, z, ry] of [[gw, mW, 0, D / 2, 0], [gw, mW, 0, -D / 2, 0], [gd, mD, -W / 2, 0, Math.PI / 2], [gd, mD, W / 2, 0, Math.PI / 2]]) {
+    const q = new THREE.Mesh(geo, mat);
+    q.position.set(x, 0, z);
+    q.rotation.y = ry;
+    q.renderOrder = 6;
+    g.add(q);
+  }
+  return g;
 }
 
 function dashTexture() {
