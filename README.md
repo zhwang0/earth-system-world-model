@@ -26,8 +26,9 @@ named. Paint logging, fire, replanting or protection onto the board, cell by cel
 year; the edited cells re-run and the landscape plays forward, with its carbon totals.
 `tests.html` checks both against the paper's PyTorch code in your own browser.
 
-A one-minute film (`assets/film/`) opens from the hero. It was rendered frame by frame from this
-page's own model, forest and landscape, with a score generated in code.
+A one-minute film (`assets/film/`) plays right after the hero: four interactions with the model
+(two disturbances, a carbon goal, a landscape). It was rendered frame by frame from this page's own
+model, forest and landscape, with a score generated in code.
 
 ## Paper
 
