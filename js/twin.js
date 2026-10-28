@@ -109,8 +109,9 @@ export async function createTwin(opts) {
 }
 
 class Twin {
-  constructor({ root, base, manifest, region = 'amazon', age = 150 }) {
+  constructor({ root, base, manifest, region = 'amazon', age = 150, intro = true }) {
     Object.assign(this, { root, base, manifest, region, age: String(age) });
+    this.introDone = !intro;          // intro: false skips the first look's flight (_intro)
     this.$ = (s) => root.querySelector(s);
     this.env = manifest.ages[this.age].action_envelope;
     this.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;

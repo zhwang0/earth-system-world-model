@@ -147,6 +147,21 @@ function chrome() {
     }
   }
 
+  // the film plays in a dialog; it is only fetched when asked for (preload="none")
+  const film = $('#film');
+  if (film && film.showModal) {
+    const v = film.querySelector('video');
+    $('#btn-film')?.addEventListener('click', () => {
+      film.showModal();
+      v.currentTime = 0;
+      v.play().catch(() => {});
+    });
+    film.addEventListener('close', () => v.pause());
+    film.addEventListener('click', (e) => { if (e.target === film) film.close(); });
+  } else {
+    $('#btn-film')?.remove();
+  }
+
   const copy = $('#btn-copy-bib');
   copy?.addEventListener('click', async () => {
     const pre = $('#bib');
