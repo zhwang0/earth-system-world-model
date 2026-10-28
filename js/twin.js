@@ -597,6 +597,18 @@ class Twin {
     this.playFromNext = years.length ? Math.max(0, Math.min(...years) - 4) : null;
     this._carbon();
     this._draw();
+    // nothing to re-run (an erase, a clear): replay what is left straight away
+    if (!jobs.length) this._replay();
+  }
+
+  /** Play the landscape again from just before its earliest edit, or from 1981 when there is none. */
+  _replay() {
+    if (!this.booted) return;
+    const years = this.cells.filter((c) => c.edit).map((c) => c.edit.year);
+    const from = years.length ? Math.max(0, Math.min(...years) - 4) : 0;
+    // edits still running: _idle plays once they land
+    if (this.runT0) { this.playFromNext = from; return; }
+    this._play(from);
   }
 
   _result(cell, v, run) {
@@ -811,7 +823,7 @@ class Twin {
       if (t.color != null) b.style.setProperty('--tool', `#${t.color.toString(16).padStart(6, '0')}`);
       b.innerHTML = `${svgIcon(t.icon)}<span>${t.label}</span>`;
       b.title = `${t.label}: ${t.what}`;
-      b.addEventListener('click', () => this._setTool(t.id));
+      b.addEventListener('click', () => this._setTool(t.id, true));
       tools.append(b);
       this.toolBtns.set(t.id, b);
     }
@@ -842,8 +854,10 @@ class Twin {
     this.root.dataset.view = this.view;
   }
 
-  _setTool(id) {
+  /** Pick a tool; a visitor's pick also replays the landscape, so every choice shows its forty years. */
+  _setTool(id, user = false) {
     this.tool = id;
+    if (user) this._replay();
     for (const [k, b] of this.toolBtns) {
       b.classList.toggle('is-on', k === id);
       b.setAttribute('aria-pressed', String(k === id));

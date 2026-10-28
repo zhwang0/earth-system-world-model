@@ -6,7 +6,7 @@
  * cell cache and answers four messages:
  *
  *   init     {base}                          load the manifest and the cell catalogue
- *   run      {cellId, age, actions}          one rollout            -> {run}
+ *   run      {cellId, age, actions, hMax}    one rollout            -> {run, capped}
  *   frontier {cellId, age, K}                the reachable envelope -> streams {k, series} then {done}
  *   solve    {cellId, age, band, year, target}  inverse problem     -> {status, delta, actions, run}
  *
@@ -18,6 +18,7 @@ import { WorldModel } from './wm.js';
 import { CellStore } from './data.js';
 import {
   freeRun, naturalIncrements, frontier, solveForTarget, actionsForHeightPath, padActions,
+  capOffset, capHeights,
 } from './solve.js';
 
 let base = '.';
@@ -70,8 +71,11 @@ self.onmessage = async (ev) => {
     if (type === 'run') {
       const { m, rec, state, emb } = await ctx(msg.cellId, msg.age);
       const acts = msg.actions ? Float32Array.from(msg.actions) : null;
-      const run = m.rollout(rec.clim, state, acts, 1, emb);
-      self.postMessage({ seq, type: 'run', run }, [run.buffer]);
+      let run = m.rollout(rec.clim, state, acts, 1, emb);
+      // hMax: an action may not raise the canopy past this ceiling (m); it levels off there
+      let capped = false;
+      if (acts && msg.hMax != null) ({ run, capped } = capHeights(m, rec.clim, state, acts, run, msg.hMax, emb));
+      self.postMessage({ seq, type: 'run', run, capped }, [run.buffer]);
       return;
     }
 
@@ -100,7 +104,8 @@ self.onmessage = async (ev) => {
       const { m, rec, state, emb, env } = await ctx(msg.cellId, msg.age);
       const free = freeRun(m, rec.clim, state, emb);
       const nat = naturalIncrements(free);
-      const f = frontier(m, rec.clim, state, nat, { env, K: msg.K || 5, climEmb: emb });
+      const dCap = capOffset(free, msg.hMax ?? Infinity);
+      const f = frontier(m, rec.clim, state, nat, { env, K: msg.K || 5, climEmb: emb, dCap });
       const band = msg.band ?? 1, year = msg.year ?? 40;
       let lo = Infinity, hi = -Infinity;
       for (let k = 0; k < f.B; k++) {
@@ -108,7 +113,10 @@ self.onmessage = async (ev) => {
         if (v < lo) lo = v;
         if (v > hi) hi = v;
       }
-      self.postMessage({ seq, type: 'range', lo, hi, baseline: free[year * 7 + band] });
+      // capped: the ceiling, not the training envelope, is what limits the top of the range
+      let natMin = Infinity;
+      for (const v of nat) natMin = Math.min(natMin, v);
+      self.postMessage({ seq, type: 'range', lo, hi, baseline: free[year * 7 + band], capped: dCap < env.max - natMin });
       return;
     }
 
@@ -118,7 +126,7 @@ self.onmessage = async (ev) => {
       const nat = naturalIncrements(free);
       const r = solveForTarget(m, rec.clim, state, nat, {
         band: msg.band ?? 1, year: msg.year ?? 40, target: msg.target, env,
-        K: msg.K || 16, climEmb: emb,
+        K: msg.K || 16, climEmb: emb, dCap: capOffset(free, msg.hMax ?? Infinity),
       });
       self.postMessage({
         seq, type: 'solve', status: r.status, delta: r.delta, achieved: r.achieved,

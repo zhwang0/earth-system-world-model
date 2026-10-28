@@ -63,6 +63,42 @@ export function actionZone(aMetres, env) {
   return 'extrapolation';
 }
 
+/**
+ * The largest uniform growth offset (m/yr beyond natural growth) that keeps the canopy at or below
+ * hMax in every year. Exact, not searched: actions start in year L, and with inverted actions the
+ * height path is h(y) = free(y) + d * (y - L + 1), so the binding year gives d directly.
+ */
+export function capOffset(free, hMax) {
+  if (!(hMax < Infinity)) return Infinity;
+  let d = Infinity;
+  for (let y = L; y < N_YR; y++) d = Math.min(d, (hMax - free[y * N_BAND]) / (y - L + 1));
+  return Math.max(0, d);
+}
+
+/**
+ * Hold a rollout under a canopy ceiling. Years before the canopy would first pass hMax keep their
+ * own actions, so the run is unchanged up to there; from then on each year asks for the run's own
+ * increment, cut to what stays under hMax, so the canopy levels off at the ceiling. Exact, through
+ * D_h's inverse. Returns the original run when it never reaches hMax.
+ */
+export function capHeights(model, clim, state, actions, run, hMax, climEmb = null) {
+  let first = -1;
+  for (let y = L; y < N_YR; y++) if (run[y * N_BAND] > hMax) { first = y; break; }
+  if (first < 0) return { run, actions, capped: false };
+  const out = actions ? Float32Array.from(actions) : new Float32Array(N_YR).fill(NaN);
+  const n = N_YR - first;
+  const want = new Float32Array(n);
+  let h = run[(first - 1) * N_BAND];
+  for (let i = 0; i < n; i++) {
+    const y = first + i;
+    const inc = run[y * N_BAND] - run[(y - 1) * N_BAND];
+    want[i] = Math.min(inc, hMax - h);
+    h += want[i];
+  }
+  out.set(model.invertDh(want), first);
+  return { run: model.rollout(clim, state, out, 1, climEmb), actions: out, capped: true };
+}
+
 /** Build a (41) action array for years 5..40 from 36 increments; years 0..4 stay NaN (the seed). */
 function pad(acts36) {
   const a = new Float32Array(N_YR).fill(NaN);
@@ -81,7 +117,7 @@ function pad(acts36) {
  * @returns {{deltas, actions, runs, B}} runs is (B*41*7) in original units
  */
 export function frontier(model, clim, state, nat, {
-  env, K = 24, clamp = true, climEmb = null, only = null,
+  env, K = 24, clamp = true, climEmb = null, only = null, dCap = Infinity,
 } = {}) {
   let natMax = -Infinity, natMin = Infinity;
   for (let i = 0; i < nat.length; i++) {
@@ -93,7 +129,8 @@ export function frontier(model, clim, state, nat, {
   // span the full range this stand can reach without ever leaving what the model was trained on.
   const n = nat.length;
   const dMin = env.min - natMax;
-  const dMax = env.max - natMin;
+  // dCap (capOffset) stops the scan where the canopy would pass its ceiling
+  const dMax = Math.max(dMin, Math.min(env.max - natMin, dCap));
 
   const from = only ? only[0] : 0;
   const to = only ? Math.min(only[1], K) : K;
@@ -137,9 +174,9 @@ export function series(runs, b, band) {
  * the best this stand can do.
  */
 export function solveForTarget(model, clim, state, nat, {
-  band = 1, year = N_YR - 1, target, env, K = 24, refine = 12, climEmb = null,
+  band = 1, year = N_YR - 1, target, env, K = 24, refine = 12, climEmb = null, dCap = Infinity,
 } = {}) {
-  const f = frontier(model, clim, state, nat, { env, K, climEmb });
+  const f = frontier(model, clim, state, nat, { env, K, climEmb, dCap });
   const vals = new Float32Array(K);
   for (let k = 0; k < K; k++) vals[k] = f.runs[(k * N_YR + year) * N_BAND + band];
 

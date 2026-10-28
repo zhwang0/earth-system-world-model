@@ -178,14 +178,15 @@ export class Why {
     if (this.reduced || !btn || !btn.animate) return;
     const from = btn.getBoundingClientRect();
     for (const [kind, card] of Object.entries(this.cards)) {
+      // the action input of each model's diagram: a barrier on one, an open port on the other
       const port = card.querySelector('[data-port="a"]');
-      const to = port.getBoundingClientRect();
+      const to = (port.querySelector('.dg-tgt') || port).getBoundingClientRect();
       const chip = document.createElement('span');
       chip.className = 'vs-token';
       chip.innerHTML = btn.querySelector('svg').outerHTML;
       document.body.appendChild(chip);
       const x0 = from.left + from.width / 2 - 14, y0 = from.top + from.height / 2 - 14;
-      const x1 = to.left + 16 - 14, y1 = to.top + to.height / 2 - 14;
+      const x1 = to.left + to.width / 2 - 14, y1 = to.top + to.height / 2 - 14;
       const bounce = kind === 'passive';
       const frames = [
         { transform: `translate(${x0}px, ${y0}px) scale(.6)`, opacity: 0 },
@@ -214,10 +215,12 @@ export class Why {
     ans.textContent = '';
     const x = this._x(AT), y = this._y(this.free[AT * 7]);
     el('line', { class: 'vs-ask-l', x1: x, x2: x, y1: PAD.t, y2: H - PAD.b }, ans);
-    const g = el('g', { class: 'vs-q', transform: `translate(${x} ${y - 22})` }, ans);
+    // a no-entry mark where the action should have gone in; the forecast runs on regardless
+    const g = el('g', { class: 'vs-q', transform: `translate(${x} ${y - 26})` }, ans);
     el('circle', { r: 10 }, g);
-    const q = el('text', { y: 4, 'text-anchor': 'middle' }, g);
-    q.textContent = '?';
+    el('path', { d: 'M-6 6L6 -6' }, g);
+    const q = el('text', { x: 16, y: 4 }, g);
+    q.textContent = 'action ignored';
     card.classList.remove('is-refused');
     void card.offsetWidth;
     card.classList.add('is-refused');

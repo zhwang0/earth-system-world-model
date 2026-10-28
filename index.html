@@ -157,8 +157,6 @@
           </p>
         </div>
         <div class="chart-pair" id="chart-grid"></div>
-        <p class="chips-cap"><span id="chips-what">Change from no action</span> · <b id="chips-year">2021</b></p>
-        <div class="chips" id="chips"></div>
         <p class="compute" id="compute-note"></p>
       </div>
     </div>
@@ -195,39 +193,42 @@
       </p>
     </header>
 
-    <ol class="asks">
-      <li class="ask">
-        <svg class="ask-fig" viewBox="0 0 120 56" aria-hidden="true">
-          <path class="ax" d="M4 48H116"/>
-          <path class="hist" d="M6 40C18 38 30 31 42 28S56 23 60 22"/>
-          <circle class="now" cx="60" cy="22" r="4"/>
+    <div class="whatif">
+      <div class="wf-text">
+        <p class="wf-k">The question a digital twin is for</p>
+        <p class="wf-q">What if?</p>
+        <p class="wf-t">
+          What happens to this forest if we log it, burn it, or plant it back? What-if reasoning
+          drives exploratory science and policy, yet standard emulators were not built for it: they
+          forecast one future, under the climate they are given.
+        </p>
+      </div>
+      <figure class="wf-figure">
+        <svg class="wf-fig" viewBox="0 0 600 236" role="img"
+             aria-label="Illustration: one forest's canopy history up to a decision in 2001, then four futures: no action, replant, burn and log.">
+          <path class="wf-ax" d="M20 204H560"/>
+          <text class="wf-yr" x="20" y="226">1981</text>
+          <text class="wf-yr" x="270" y="226" text-anchor="middle">2001</text>
+          <text class="wf-yr" x="520" y="226" text-anchor="end">2021</text>
+          <path class="wf-hist" d="M20 154C70 150 110 140 150 132S230 114 270 110"/>
+          <path class="wf-br wf-free" pathLength="1" d="M270 110C330 102 420 92 520 84"/>
+          <path class="wf-br wf-up" pathLength="1" d="M270 110C320 88 420 54 520 42"/>
+          <path class="wf-br wf-burn" pathLength="1" d="M270 110C284 140 300 148 330 148S440 142 520 138"/>
+          <path class="wf-br wf-log" pathLength="1" d="M270 110C278 162 292 176 330 176S450 172 520 170"/>
+          <circle class="wf-ring" cx="270" cy="110" r="6"/>
+          <circle class="wf-now" cx="270" cy="110" r="6"/>
+          <text class="wf-lab wf-lab-now" x="270" y="90" text-anchor="middle">a decision</text>
+          <text class="wf-lab wf-l-up" x="530" y="46">replant</text>
+          <text class="wf-lab wf-l-free" x="530" y="88">no action</text>
+          <text class="wf-lab wf-l-burn" x="530" y="142">burn</text>
+          <text class="wf-lab wf-l-log" x="530" y="174">log</text>
         </svg>
-        <p class="ask-q">What now?</p>
-        <p class="ask-t">A replica of the system as observed.</p>
-      </li>
-      <li class="ask">
-        <svg class="ask-fig" viewBox="0 0 120 56" aria-hidden="true">
-          <path class="ax" d="M4 48H116"/>
-          <path class="hist" d="M6 40C18 38 30 31 42 28S56 23 60 22"/>
-          <path class="next" pathLength="1" d="M60 22C76 19 94 16 114 14"/>
-          <circle class="now" cx="60" cy="22" r="4"/>
-        </svg>
-        <p class="ask-q">What next?</p>
-        <p class="ask-t">A forecast under a given climate. Emulators made this fast.</p>
-      </li>
-      <li class="ask is-gap">
-        <svg class="ask-fig" viewBox="0 0 120 56" aria-hidden="true">
-          <path class="ax" d="M4 48H116"/>
-          <path class="hist" d="M6 40C18 38 30 31 42 28S56 23 60 22"/>
-          <path class="next" pathLength="1" d="M60 22C76 19 94 16 114 14"/>
-          <path class="branch" pathLength="1" d="M60 22C74 30 92 35 114 37"/>
-          <path class="branch b2" pathLength="1" d="M60 22C74 15 92 8 114 5"/>
-          <circle class="now" cx="60" cy="22" r="4"/>
-        </svg>
-        <p class="ask-q">What if?</p>
-        <p class="ask-t">The impact of a decision. A passive emulator has no input for it.</p>
-      </li>
-    </ol>
+        <figcaption class="wf-key">
+          <span class="k-free"><i></i>No action: the one future an emulator can show</span>
+          <span class="k-act"><i></i>Log, burn, replant: what a world model answers</span>
+        </figcaption>
+      </figure>
+    </div>
 
     <div class="vs" id="vs" data-state="loading">
       <div class="vs-ask">
@@ -240,24 +241,69 @@
             <h3>Passive emulator</h3>
             <p class="eq">ŷ<sub>t+1</sub> = F(y<sub>1:t</sub>, x<sub>1:t</sub>)</p>
           </header>
-          <div class="ports">
-            <span class="port"><i>x</i>climate</span>
-            <span class="port"><i>y</i>state</span>
-            <span class="port port-none" data-port="a"><i>a</i>no action input</span>
-          </div>
+          <svg class="dg" viewBox="0 0 400 100" aria-hidden="true">
+          <defs>
+            <marker id="dg-arr-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="dg-head" d="M0 0L10 5L0 10Z"/></marker>
+            <marker id="dg-arr-p-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="dg-head-a" d="M0 0L10 5L0 10Z"/></marker>
+          </defs>
+          <g class="dg-in">
+            <circle class="dg-dot" cx="13" cy="20" r="10"/><text class="dg-sym" x="13" y="24">x</text>
+            <text class="dg-lbl" x="30" y="24">climate</text>
+            <path class="dg-line" d="M94 20H222" marker-end="url(#dg-arr-p)"/>
+          </g>
+          <g class="dg-in">
+            <circle class="dg-dot" cx="13" cy="50" r="10"/><text class="dg-sym" x="13" y="54">y</text>
+            <text class="dg-lbl" x="30" y="54">state</text>
+            <path class="dg-line" d="M94 50H222" marker-end="url(#dg-arr-p)"/>
+          </g>
+          <g class="dg-a dg-a-no" data-port="a">
+            <circle class="dg-dot" cx="13" cy="80" r="10"/><text class="dg-sym" x="13" y="84">a</text>
+            <text class="dg-lbl" x="30" y="84">action</text>
+            <path class="dg-line" d="M94 80H122"/>
+            <path class="dg-bar" d="M128 67V93"/>
+            <g class="dg-ban" transform="translate(146 80)"><circle r="8"/><path d="M-5.5 5.5L5.5 -5.5"/></g>
+            <text class="dg-why" x="160" y="84">no input</text>
+            <rect class="dg-tgt" x="124" y="72" width="8" height="16"/>
+          </g>
+          <rect class="dg-box" x="228" y="6" width="76" height="88" rx="14"/>
+          <text class="dg-f" x="266" y="57">F</text>
+          <path class="dg-out" d="M304 50H364" marker-end="url(#dg-arr-p)"/>
+          <text class="dg-sym dg-yhat" x="382" y="55">ŷ</text>
+        </svg>
           <svg class="vs-chart" viewBox="0 0 400 150" aria-hidden="true"></svg>
-          <p class="vs-say" aria-live="polite">Replays the simulator under the forcing it is given.</p>
+          <p class="vs-say" aria-live="polite">Replays the simulator under the forcing it is given. There is nowhere to put a decision.</p>
         </article>
         <article class="vs-card vs-world">
           <header class="vs-h">
             <h3>World model <span>this paper</span></h3>
             <p class="eq">ŷ<sub>t+1</sub> = F(y<sub>1:t</sub>, x<sub>1:t</sub>, <b>a<sub>t</sub></b>)</p>
           </header>
-          <div class="ports">
-            <span class="port"><i>x</i>climate</span>
-            <span class="port"><i>y</i>state</span>
-            <span class="port port-a" data-port="a"><i>a</i>action</span>
-          </div>
+          <svg class="dg" viewBox="0 0 400 100" aria-hidden="true">
+          <defs>
+            <marker id="dg-arr-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="dg-head" d="M0 0L10 5L0 10Z"/></marker>
+            <marker id="dg-arr-w-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="dg-head-a" d="M0 0L10 5L0 10Z"/></marker>
+          </defs>
+          <g class="dg-in">
+            <circle class="dg-dot" cx="13" cy="20" r="10"/><text class="dg-sym" x="13" y="24">x</text>
+            <text class="dg-lbl" x="30" y="24">climate</text>
+            <path class="dg-line" d="M94 20H222" marker-end="url(#dg-arr-w)"/>
+          </g>
+          <g class="dg-in">
+            <circle class="dg-dot" cx="13" cy="50" r="10"/><text class="dg-sym" x="13" y="54">y</text>
+            <text class="dg-lbl" x="30" y="54">state</text>
+            <path class="dg-line" d="M94 50H222" marker-end="url(#dg-arr-w)"/>
+          </g>
+          <g class="dg-a dg-a-yes" data-port="a">
+            <circle class="dg-dot" cx="13" cy="80" r="10"/><text class="dg-sym" x="13" y="84">a</text>
+            <text class="dg-lbl" x="30" y="84">action</text>
+            <path class="dg-line" d="M94 80H222" marker-end="url(#dg-arr-w-a)"/>
+            <rect class="dg-tgt" x="214" y="72" width="8" height="16"/>
+          </g>
+          <rect class="dg-box" x="228" y="6" width="76" height="88" rx="14"/>
+          <text class="dg-f" x="266" y="57">F</text>
+          <path class="dg-out" d="M304 50H364" marker-end="url(#dg-arr-w)"/>
+          <text class="dg-sym dg-yhat" x="382" y="55">ŷ</text>
+        </svg>
           <svg class="vs-chart" viewBox="0 0 400 150" aria-hidden="true"></svg>
           <p class="vs-say" aria-live="polite">The same forecast, plus an input for actions.</p>
         </article>
@@ -349,41 +395,110 @@
   <div class="wrap">
     <header class="sec-head">
       <p class="kicker"><span>04</span>How it works</p>
-      <h2>Emulators predict. <span class="h2-2">This one <em>takes orders</em>.</span></h2>
+      <h2>Two ideas, tested <em>on six continents</em>.</h2>
       <p class="sec-lede">
-        Simulator runs contain no actions to learn from, so every observed change becomes one.
+        The paper turns emulator training from passive input–output supervision into
+        action-conditioned state transitions, without a single labelled intervention.
+        Its three contributions:
       </p>
     </header>
 
-    <div class="steps">
-      <article class="step">
-        <p class="step-n">01</p>
-        <h3>Actions for free</h3>
+    <ol class="contribs">
+      <li class="contrib">
+        <svg class="cb-fig" viewBox="0 0 300 132" aria-hidden="true">
+          <text class="cb-eq" x="14" y="24">a<tspan class="cb-sub" dy="5">t</tspan><tspan dy="-5"> = h</tspan><tspan class="cb-sub" dy="5">t+1</tspan><tspan dy="-5"> − h</tspan><tspan class="cb-sub" dy="5">t</tspan></text>
+          <path class="cb-ax" d="M14 116H288"/>
+          <path class="cb-run" d="M24 104H74M74 90H124M124 80H174M174 64H224M224 56H274"/>
+          <path class="cb-step" d="M74 104V93M124 90V83M174 80V67M224 64V59M274 56V43"/>
+          <path class="cb-tip" d="M70 97L74 91L78 97M120 87L124 81L128 87M170 74L174 68L178 74M220 66L224 60L228 66M270 49L274 43L278 49"/>
+          <text class="cb-v" x="80" y="102">+0.4</text>
+          <text class="cb-v" x="130" y="90">+0.3</text>
+          <text class="cb-v" x="180" y="78">+0.5</text>
+          <text class="cb-v" x="230" y="66">+0.2</text>
+          <text class="cb-v" x="244" y="38" text-anchor="end">+0.4</text>
+          <text class="cb-cap" x="14" y="130">canopy height, year by year: each rise is an action</text>
+        </svg>
+        <p class="cb-n">Contribution 1</p>
+        <h3>Transition-action pretraining</h3>
         <p>
-          If canopy height rose 0.4 m this year, call that a +0.4 m action: supervision from data
-          that already exists.
+          Simulator runs record no interventions, so every observed change becomes one: if canopy
+          height rose 0.4 m in a year, that is a +0.4 m action. The same runs teach both modes,
+          natural growth with no action and change under one.
         </p>
-      </article>
-      <article class="step">
-        <p class="step-n">02</p>
-        <h3>A gate, not a hint</h3>
+      </li>
+      <li class="contrib">
+        <svg class="cb-fig" viewBox="0 0 300 132" aria-hidden="true">
+          <defs>
+            <pattern id="cb-hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <path class="cb-hl" d="M0 0V5"/>
+            </pattern>
+          </defs>
+          <text class="cb-head" x="112" y="12" text-anchor="middle">year t, edited</text>
+          <text class="cb-head" x="232" y="12" text-anchor="middle">year t+1</text>
+          <g class="cb-rows">
+            <text x="76" y="28" text-anchor="end">height</text>
+            <text x="76" y="43" text-anchor="end">biomass</text>
+            <text x="76" y="58" text-anchor="end">soil carbon</text>
+            <text x="76" y="73" text-anchor="end">leaf area</text>
+            <text x="76" y="88" text-anchor="end">GPP</text>
+            <text x="76" y="103" text-anchor="end">NPP</text>
+            <text x="76" y="118" text-anchor="end">respiration</text>
+          </g>
+          <rect class="cb-edit" x="84" y="19" width="56" height="12" rx="3"/>
+          <g class="cb-mask">
+            <rect x="84" y="34" width="56" height="12" rx="3"/><rect x="84" y="49" width="56" height="12" rx="3"/>
+            <rect x="84" y="64" width="56" height="12" rx="3"/><rect x="84" y="79" width="56" height="12" rx="3"/>
+            <rect x="84" y="94" width="56" height="12" rx="3"/><rect x="84" y="109" width="56" height="12" rx="3"/>
+          </g>
+          <path class="cb-arrow" d="M150 70H190"/>
+          <path class="cb-arrow-h" d="M184 65L191 70L184 75"/>
+          <g class="cb-pred">
+            <rect x="204" y="19" width="56" height="12" rx="3"/><rect x="204" y="34" width="56" height="12" rx="3"/>
+            <rect x="204" y="49" width="56" height="12" rx="3"/><rect x="204" y="64" width="56" height="12" rx="3"/>
+            <rect x="204" y="79" width="56" height="12" rx="3"/><rect x="204" y="94" width="56" height="12" rx="3"/>
+            <rect x="204" y="109" width="56" height="12" rx="3"/>
+          </g>
+          <text class="cb-tag cb-tag-e" x="112" y="28.5" text-anchor="middle">edited</text>
+          <text class="cb-tag cb-tag-m" x="112" y="73.5" text-anchor="middle">masked</text>
+          <text class="cb-tag cb-tag-p" x="232" y="73.5" text-anchor="middle">inferred</text>
+        </svg>
+        <p class="cb-n">Contribution 2</p>
+        <h3>Masked response learning</h3>
         <p>
-          Given an action, the gate hands height to it; given none, a dynamics head predicts growth.
-          One model, both modes, so control costs no accuracy.
+          An edit changes canopy height and leaves biomass, soil carbon and the fluxes out of date.
+          Training masks them at the edited step, so the model learns to infer their coupled
+          response from the edit alone.
         </p>
-      </article>
-      <article class="step">
-        <p class="step-n">03</p>
-        <h3>The rest follows</h3>
+      </li>
+      <li class="contrib">
+        <div class="cb-map" role="img" aria-label="The six study regions: eastern North America, northwestern South America, central Africa, Europe, eastern China and eastern Australia.">
+          <div class="cb-world">
+            <img src="assets/img/world-dots.png" alt="" loading="lazy">
+            <i class="rg" style="left:26.67%;top:25.56%;width:2.92%;height:5.83%" title="E North America"></i>
+            <i class="rg" style="left:29.44%;top:47.78%;width:2.92%;height:5.83%" title="NW South America"></i>
+            <i class="rg" style="left:53.89%;top:46.67%;width:3.47%;height:4.72%" title="Central Africa"></i>
+            <i class="rg" style="left:51.39%;top:20%;width:3.47%;height:4.72%" title="Europe"></i>
+            <i class="rg" style="left:80%;top:31.11%;width:2.92%;height:4.72%" title="Eastern China"></i>
+            <i class="rg" style="left:90.56%;top:62.78%;width:1.81%;height:5.28%" title="East Australia"></i>
+          </div>
+        </div>
+        <p class="cb-n">Contribution 3</p>
+        <h3>Six regions, three forest ages</h3>
         <p>
-          Biomass, soil carbon and the fluxes go stale after an edit, so training masks them and the
-          model infers them from the new height.
+          Trajectories from six regions on six continents, young to mature stands: 21,315 samples,
+          with test locations held apart from training. Accuracy holds, and responses follow the
+          action.
         </p>
-      </article>
-    </div>
+      </li>
+    </ol>
 
     <figure class="fig fig-wide">
       <img src="assets/img/fig1_overview.png" alt="The action-conditioned world model: forcing, state and an optional user action enter an encoder; an action gate selects either the encoded action or a natural-dynamics head; non-height variables are masked; the decoder produces a prescribed rollout or an action-conditioned response." loading="lazy">
+      <figcaption>
+        The framework (paper Fig. 1). An action gate gives one model two modes: with no action, a
+        natural-dynamics head predicts growth; with one, the action sets the height and the rest is
+        inferred.
+      </figcaption>
     </figure>
   </div>
 </section>

@@ -2,9 +2,9 @@
  * lab.js — one panel: pick something to do to a forest, see what the model says.
  *
  * v2 deliberately collapses the old three-tab interface. A visitor picks a scenario and a year;
- * the scenario fixes the magnitude, so there is exactly one number to move. Canopy height and
- * biomass get full charts; the other five variables appear as compact response chips, which is
- * what shows the coupling without burying the point under seven plots.
+ * the scenario fixes the magnitude, so there is exactly one number to move. Two charts answer it:
+ * canopy height, the edited variable, and biomass, the response it carries. No scenario may raise
+ * the canopy past H_MAX; the worker levels a run off there (solve.js capHeights).
  *
  * Above them stands the forest itself: in 3D (stage3d.js), where an action forks the plot into
  * two futures, or flat (stand.js) without WebGL. A new scenario or site plays once, slowed through
@@ -13,7 +13,7 @@
  * 2021 at rest.
  */
 
-import { buildCharts, buildChips, pick, BANDS, Policy } from './charts.js';
+import { buildCharts, pick, BANDS, Policy } from './charts.js';
 import { Stand } from './stand.js';
 import { Locator } from './locator.js';
 import { svgIcon } from './icons.js';
@@ -22,6 +22,8 @@ const YEARS = 41;
 const YEAR0 = 1981;
 const SEED = 5;
 const PLAY_MS = 2600;
+// no action, and no target, may raise the canopy past this (m): the forest levels off there
+const H_MAX = 50;
 
 /**
  * Magnitudes are chosen to sit inside what ED itself produced, so the model is never asked
@@ -42,7 +44,7 @@ const SCENARIOS = [
   { id: 'protect', label: 'Protect', icon: 'shield', ramp: 0.15, span: null,
     hint: 'A little extra growth every year to 2021.' },
   { id: 'goal', label: 'Hit a target', icon: 'target',
-    hint: 'Name the biomass you want in 2021; the model solves for the yearly actions.' },
+    hint: 'Name the biomass you want in 2021; the model solves for the yearly actions, keeping the canopy under 50 m.' },
 ];
 
 export class Lab {
@@ -63,7 +65,6 @@ export class Lab {
 
     this.$ = (s) => root.querySelector(s);
     this.charts = buildCharts(this.$('#chart-grid'), [0, 1]);
-    this.chips = buildChips(this.$('#chips'), [2, 3, 4, 5, 6]);
     this.policy = new Policy(this.$('#policy'));
     this.stand = new Stand(this.$('#stand'));
     this._upgradeStage();
@@ -259,13 +260,13 @@ export class Lab {
     try {
       const acts = this._actions();
       const any = acts.some((v) => v === v);
-      const { run } = any
-        ? await this.client.send({ type: 'run', cellId: this.cellId, age: this.age, actions: acts })
+      const { run, capped } = any
+        ? await this.client.send({ type: 'run', cellId: this.cellId, age: this.age, actions: acts, hMax: H_MAX })
         : { run: null };
       const s = SCENARIOS.find((x) => x.id === this.scenario);
       this._draw(run, any && s.mag != null ? Number(this.$('#rng-year').value) : NaN);
-      this.$('#compute-note').textContent =
-        `${Math.round(performance.now() - t0)} ms · ${any ? 'model prediction' : 'no action'}`;
+      this.$('#compute-note').textContent = `${Math.round(performance.now() - t0)} ms · ` +
+        `${any ? 'model prediction' : 'no action'}${capped ? ` · canopy held at ${H_MAX} m` : ''}`;
     } finally {
       this._busy = false;
       this.root.dataset.state = 'ready';
@@ -274,19 +275,12 @@ export class Lab {
 
   _draw(act, markYear) {
     this.$('#key-act').hidden = !act;
-    this.$('#chips-what').textContent = act ? 'Change from no action' : 'The other five variables';
     for (const c of this.charts) {
       c.update({
         ed: this.ed ? pick(this.ed, c.band) : null,
         free: this.free ? pick(this.free, c.band) : null,
         act: act ? pick(act, c.band) : null,
         markYear,
-      });
-    }
-    for (const c of this.chips) {
-      c.update({
-        free: this.free ? pick(this.free, c.band) : null,
-        act: act ? pick(act, c.band) : null,
       });
     }
     // the stage needs the action's date for ramps too, and a name for the scenario's plot
@@ -318,7 +312,6 @@ export class Lab {
     this._tip = tip;
     this._src = src;
     for (const c of this.charts) c.setFocus(y, tip && src === 'chart');
-    for (const c of this.chips) c.setFocus(y);
     this.policy.setFocus(y, tip && src === 'policy');
     const sy = y == null ? YEARS - 1 : y;
     this.stand.setYear(sy);
@@ -335,7 +328,6 @@ export class Lab {
     const { free, act } = this.stand.valuesAt(y);
     const yr = String(YEAR0 + Math.round(y));
     this.$('#stage-year').textContent = yr;
-    this.$('#chips-year').textContent = yr;
     if (!Number.isFinite(free)) return;
     this.$('#stage-read').innerHTML = Number.isFinite(act)
       ? `<span><i class="sw sw-act"></i>Your scenario <b>${act.toFixed(1)} m</b></span>` +
@@ -391,10 +383,12 @@ export class Lab {
     rng.disabled = true;
     this.$('#out-target').textContent = 'measuring…';
     const r = await this.client.send({
-      type: 'range', cellId: this.cellId, age: this.age, band: 1, year: 40, K: 5,
+      type: 'range', cellId: this.cellId, age: this.age, band: 1, year: 40, K: 5, hMax: H_MAX,
     });
+    // a little headroom past what the stand can reach, so "out of reach" can be shown; none at the
+    // top when the 50 m ceiling, not the stand, sets it
     const pad = (r.hi - r.lo) * 0.15 || Math.abs(r.hi) * 0.1 || 1;
-    this._range = { lo: r.lo - pad, hi: r.hi + pad, base: r.baseline };
+    this._range = { lo: r.lo - pad, hi: r.hi + (r.capped ? 0 : pad), base: r.baseline };
     this._rangeKey = key;
     const open = r.baseline + 0.55 * (r.hi - r.baseline);
     rng.value = String(Math.round(Math.max(0, Math.min(1,
@@ -426,7 +420,7 @@ export class Lab {
     const t0 = performance.now();
     try {
       const r = await this.client.send({
-        type: 'solve', cellId: this.cellId, age: this.age, band: 1, year: 40, target, K: 16,
+        type: 'solve', cellId: this.cellId, age: this.age, band: 1, year: 40, target, K: 16, hMax: H_MAX,
       });
       // what the stand would have done on its own, year by year, against what the plan asks
       const nat = new Float32Array(36);
