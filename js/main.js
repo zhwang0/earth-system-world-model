@@ -148,12 +148,22 @@ function chrome() {
   }
 
   // the film: the hero's button brings it into view and starts it (a click, so sound may play);
-  // it is fetched only when played, and pauses once it is scrolled away
+  // it is fetched only when played, and pauses once it is scrolled away. Until it first plays, the
+  // poster is a title card with one play button; the native controls come with playback, and the
+  // card comes back when the film ends.
   const video = $('#film-video');
   if (video) {
+    const card = $('#film-play');
+    const fresh = (on) => { card.hidden = !on; video.controls = !on; };
+    const play = () => video.play().catch(() => {});
+    fresh(true);
+    card.addEventListener('click', play);
+    video.addEventListener('click', () => { if (!card.hidden) play(); });
+    video.addEventListener('play', () => fresh(false));
+    video.addEventListener('ended', () => { video.load(); fresh(true); });
     $('#btn-film')?.addEventListener('click', () => {
       $('#film').scrollIntoView({ behavior: 'smooth', block: 'center' });
-      video.play().catch(() => {});
+      play();
     });
     new IntersectionObserver(([e]) => { if (!e.isIntersecting && !video.paused) video.pause(); },
       { threshold: 0.2 }).observe(video);

@@ -84,13 +84,13 @@ function ramp(t, out) {
   return out.copy(RAMP[i]).lerp(RAMP[i + 1], x - i);
 }
 
-/** The worked example: a road opening the forest from the east, side roads off it, a fire near it. */
+/** The worked example: logging that spreads west through the forest, side cuts off it, a fire near it. */
 function example(rows, cols) {
   const out = [];
-  const road = Math.floor(rows / 2);
-  for (let c = cols - 1; c >= 3; c--) out.push([road, c, 'log', Math.round(12 + (cols - 1 - c) * 1.5)]);
+  const front = Math.floor(rows / 2);
+  for (let c = cols - 1; c >= 3; c--) out.push([front, c, 'log', Math.round(12 + (cols - 1 - c) * 1.5)]);
   for (const [c, y] of [[cols - 3, 17], [cols - 6, 21], [cols - 9, 26], [cols - 12, 30]]) {
-    for (const d of [-3, -2, -1, 1, 2, 3]) out.push([road + d, c, 'log', Math.min(40, y + Math.abs(d))]);
+    for (const d of [-3, -2, -1, 1, 2, 3]) out.push([front + d, c, 'log', Math.min(40, y + Math.abs(d))]);
   }
   for (const [r, c] of [[3, 9], [3, 10], [4, 9], [4, 10], [4, 11], [5, 10]]) out.push([r, c, 'fire', 27]);
   return out;

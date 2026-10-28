@@ -76,14 +76,19 @@
 <section class="film-band" id="film" aria-label="The film">
   <div class="wrap">
     <figure class="film">
-      <video id="film-video" controls playsinline preload="none" poster="assets/film/poster.jpg">
-        <source src="assets/film/eswm-film.mp4" type="video/mp4">
-      </video>
+      <div class="film-v">
+        <video id="film-video" controls playsinline preload="none" poster="assets/film/poster.jpg">
+          <source src="assets/film/eswm-film.mp4" type="video/mp4">
+        </video>
+        <button class="film-play" id="film-play" type="button" aria-label="Play the film, 1 minute" hidden>
+          <i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7Z"/></svg></i>
+          <b>Play the film</b> <span>1 min</span>
+        </button>
+      </div>
       <figcaption class="film-cap">
         <span class="film-k">The film · 1 min · with sound</span>
-        <span>An emulator lets you watch; this world model lets you interact: two disturbances, a carbon
-        goal, a real-world landscape, then how it works. Rendered frame by frame from this page’s own
-        model, forest and landscape.</span>
+        <span>Two disturbances, a carbon goal, logging across a real landscape, then how it works.
+        Rendered frame by frame from this page’s own model, forest and landscape.</span>
       </figcaption>
     </figure>
   </div>
@@ -347,7 +352,7 @@
       <h2>Now, <em>a whole landscape</em>.</h2>
       <p class="sec-lede">
         256 forest cells of the western Amazon, where Brazil, Colombia and Peru meet, each one the
-        paper's model running live. Open a logging road, set a fire, replant, then press play.
+        paper's model running live. Log a stretch of forest, set a fire, replant, then press play.
       </p>
     </header>
 
