@@ -28,9 +28,8 @@
   <nav class="nav-links" aria-label="Sections">
     <a href="#film">Film</a>
     <a href="#try">Try it</a>
-    <a href="#why">Why</a>
     <a href="#twin">Landscape</a>
-    <a href="#how">How</a>
+    <a href="#how">How it works</a>
     <a href="#results">Results</a>
     <a href="#cite">Paper</a>
   </nav>
@@ -208,54 +207,136 @@
   </div>
 </section>
 
-<!-- ───────────────────────────────────────────────────────────── 02 why -->
-<section class="sec" id="why">
+<!-- ───────────────────────────────────────────────────────────── 02 the landscape -->
+<section class="sec" id="twin">
   <div class="wrap">
     <header class="sec-head">
-      <p class="kicker"><span>02</span>Why interactive</p>
-      <h2>Emulators made Earth models fast. <span class="h2-2">But you can only <em>watch</em>.</span></h2>
+      <p class="kicker"><span>02</span>Digital twin</p>
+      <h2>Now, <em>a whole landscape</em>.</h2>
       <p class="sec-lede">
-        An emulator replays a simulator under the climate it is given. Like early video generators,
-        it has no input for a decision, and a digital twin needs one to answer <em>what if</em>.
+        256 forest cells of the western Amazon, where Brazil, Colombia and Peru meet, each one the
+        paper's model running live. Log a stretch of forest, set a fire, replant, then press play.
       </p>
     </header>
 
-    <div class="whatif">
-      <div class="wf-text">
-        <p class="wf-k">The question a digital twin is for</p>
-        <p class="wf-q">What if?</p>
-        <p class="wf-t">
-          What happens to this forest if we log it, burn it, or plant it back? What-if reasoning
-          drives exploratory science and policy, yet standard emulators were not built for it: they
-          forecast one future, under the climate they are given.
-        </p>
+    <div class="twin" id="twin-root" data-state="idle">
+      <div class="tw-view">
+        <canvas class="tw-canvas" id="tw-canvas" role="img"
+                aria-label="A 16 by 16 block of western Amazon forest cells on its satellite image; the trees follow the canopy height the model predicts for each"></canvas>
+        <div class="tw-labels" id="tw-labels" aria-hidden="true"></div>
+        <div class="tw-hud">
+          <div class="tw-where">
+            <div class="loc-wrap tw-loc">
+              <canvas class="loc" id="tw-globe" aria-hidden="true"></canvas>
+              <span class="loc-pin" id="tw-pin" aria-hidden="true"></span>
+            </div>
+            <p class="tw-place"><b>Western Amazon</b><span>2.5°N–5.5°S · 64.5–72.5°W</span></p>
+          </div>
+          <p class="tw-year" id="tw-year">2021</p>
+        </div>
+        <div class="tw-carbon">
+          <p class="tw-c-l">Carbon above ground, <span id="tw-c-year">2021</span></p>
+          <p class="tw-c-n" id="tw-c-total">…</p>
+          <p class="tw-c-d" id="tw-c-delta"></p>
+          <svg class="tw-c-chart" id="tw-c-chart" viewBox="0 0 200 48" preserveAspectRatio="none" aria-hidden="true"></svg>
+        </div>
+        <p class="tw-status" id="tw-status">Starts when you scroll here</p>
+        <div class="tw-views" role="group" aria-label="View">
+          <span class="tw-legend" id="tw-legend" hidden><i></i>lower · higher than no action</span>
+          <button type="button" data-view="map">Map</button>
+          <button type="button" data-view="forest">Forest</button>
+          <button type="button" data-view="change">Change</button>
+        </div>
+        <div class="tw-tip" id="tw-tip" hidden></div>
       </div>
-      <figure class="wf-figure">
-        <svg class="wf-fig" viewBox="0 0 600 236" role="img"
-             aria-label="Illustration: one forest's canopy history up to a decision in 2001, then four futures: no action, replant, burn and log.">
-          <path class="wf-ax" d="M20 204H560"/>
-          <text class="wf-yr" x="20" y="226">1981</text>
-          <text class="wf-yr" x="270" y="226" text-anchor="middle">2001</text>
-          <text class="wf-yr" x="520" y="226" text-anchor="end">2021</text>
-          <path class="wf-hist" d="M20 154C70 150 110 140 150 132S230 114 270 110"/>
-          <path class="wf-br wf-free" pathLength="1" d="M270 110C330 102 420 92 520 84"/>
-          <path class="wf-br wf-up" pathLength="1" d="M270 110C320 88 420 54 520 42"/>
-          <path class="wf-br wf-burn" pathLength="1" d="M270 110C284 140 300 148 330 148S440 142 520 138"/>
-          <path class="wf-br wf-log" pathLength="1" d="M270 110C278 162 292 176 330 176S450 172 520 170"/>
-          <circle class="wf-ring" cx="270" cy="110" r="6"/>
-          <circle class="wf-now" cx="270" cy="110" r="6"/>
-          <text class="wf-lab wf-lab-now" x="270" y="90" text-anchor="middle">a decision</text>
-          <text class="wf-lab wf-l-up" x="530" y="46">replant</text>
-          <text class="wf-lab wf-l-free" x="530" y="88">no action</text>
-          <text class="wf-lab wf-l-burn" x="530" y="142">burn</text>
-          <text class="wf-lab wf-l-log" x="530" y="174">log</text>
-        </svg>
-        <figcaption class="wf-key">
-          <span class="k-free"><i></i>No action: the one future an emulator can show</span>
-          <span class="k-act"><i></i>Log, burn, replant: what a world model answers</span>
-        </figcaption>
-      </figure>
+
+      <div class="tw-bar">
+        <div class="tw-tools" id="tw-tools" role="group" aria-label="Paint an intervention"></div>
+        <div class="tw-opts">
+          <div class="tw-brush" role="group" aria-label="Brush">
+            <button type="button" data-brush="1">1 cell</button>
+            <button type="button" data-brush="3">3 × 3</button>
+          </div>
+          <label class="tw-when" id="tw-when">in <output id="tw-out-year">2001</output>
+            <input type="range" id="tw-year-in" min="5" max="40" value="20" step="1"></label>
+          <button class="btn btn-sm" id="tw-example" type="button">Example</button>
+          <button class="btn btn-sm" id="tw-clear" type="button">Clear</button>
+        </div>
+        <p class="tw-hint" id="tw-hint"></p>
+      </div>
+
+      <div class="tw-time">
+        <button class="tw-play" id="tw-play" type="button" aria-label="Play">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-play" d="M8 5v14l11-7Z"/><path class="i-pause" d="M7 5h4v14H7Zm6 0h4v14h-4Z"/></svg>
+        </button>
+        <input type="range" id="tw-scrub" min="0" max="40" value="40" step="0.01" aria-label="Year">
+        <span class="tw-span" aria-hidden="true"><i>1981</i><i>2021</i></span>
+      </div>
     </div>
+    <p class="fine">
+      Each 0.5° cell (about 55 km) runs on its own, as in the paper: nothing spreads between cells.
+      Imagery: NASA Blue Marble. Rivers and towns: Natural Earth.
+    </p>
+  </div>
+</section>
+
+<!-- ───────────────────────────────────────────────────────────── 03 why, and how it works -->
+<section class="sec" id="how">
+  <span class="anchor" id="why" aria-hidden="true"></span>
+  <div class="wrap">
+    <header class="sec-head">
+      <p class="kicker"><span>03</span>How it works</p>
+      <h2>Emulators let you watch.<br><span class="h2-2">A world model lets you <em>interact</em>.</span></h2>
+      <p class="sec-lede">
+        Video went from generators you watch to world models you can act in. Most Earth emulators,
+        for weather and for ecosystems, are still the first kind: they replay a simulator under the
+        climate they are given, with no input for a decision. This paper builds the second kind.
+      </p>
+    </header>
+
+    <figure class="ana" id="ana" aria-label="Video and the Earth system, each watched or interacted with: video generation, an interactive world model, Earth emulators, and this paper's Earth system world model">
+      <p class="ana-col ana-col-w"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7Z"/></svg>Watch</p>
+      <p class="ana-col ana-col-i"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11.5V5.5a1.5 1.5 0 0 1 3 0V11m0-1.5a1.5 1.5 0 0 1 3 0V12m0-1a1.5 1.5 0 0 1 3 0v4.5a5.5 5.5 0 0 1-5.5 5.5h-1A5.5 5.5 0 0 1 6 16.8L4.4 13a1.5 1.5 0 0 1 2.6-1.4L9 14"/></svg>Interact</p>
+      <p class="ana-row ana-row-v">Video</p>
+      <p class="ana-row ana-row-e">Earth<br>system</p>
+
+      <div class="ana-cell" id="ana-tl">
+        <svg class="ana-walk" id="ana-w1" viewBox="0 0 720 405" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
+        <p class="ana-t"><span class="ana-k">Watch</span>Video generation</p>
+        <div class="ana-bar" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7Z"/></svg><span class="ana-tr"><span class="ana-fl" id="ana-bar"></span></span><span id="ana-time">0:00</span></div>
+      </div>
+
+      <div class="ana-cell" id="ana-tr" tabindex="0" aria-label="An interactive world model: press the left or right arrow to turn the view">
+        <svg class="ana-walk" id="ana-w2" viewBox="0 0 720 405" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
+        <p class="ana-t"><span class="ana-k">Interact</span>Interactive world model</p>
+        <div class="ana-keys">
+          <button type="button" data-turn="1" aria-label="Turn left">←</button>
+          <button type="button" data-turn="-1" aria-label="Turn right">→</button>
+        </div>
+      </div>
+
+      <div class="ana-cell" id="ana-bl">
+        <img src="assets/img/ana-emulators.webp" width="1440" height="810" loading="lazy" decoding="async"
+             alt="Earth emulators: the planet's weather, and DeepED's forest replayed from 1981 to 2021">
+        <p class="ana-t"><span class="ana-k">Watch</span>Earth emulators</p>
+        <p class="ana-l ana-l-w"><b>Weather</b></p>
+        <p class="ana-l ana-l-e"><b>Ecosystem</b> · DeepED</p>
+        <div class="ana-bar is-done" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7Z"/></svg><span>1981</span><span class="ana-tr"><span class="ana-fl"></span></span><span>2021</span></div>
+      </div>
+
+      <div class="ana-cell ana-br" id="ana-br">
+        <div class="ana-q" aria-hidden="true">
+          <p class="ana-qm">?</p>
+          <div class="ana-qs"><p class="ana-qw">What if</p><p>we log it?</p><p>it burns?</p><p>we set a carbon goal?</p></div>
+        </div>
+        <div class="ana-a">
+          <img src="assets/img/ana-world-model.webp" width="1440" height="810" loading="lazy" decoding="async"
+               alt="This paper's Earth system world model: the forest you can act on, above">
+          <p class="ana-t"><span class="ana-k">Interact</span>Earth System World Model <i>this paper</i></p>
+          <a class="ana-try" href="#try">You can act on it above</a>
+        </div>
+      </div>
+    </figure>
 
     <div class="vs" id="vs" data-state="loading">
       <div class="vs-ask">
@@ -337,98 +418,11 @@
       </div>
     </div>
 
-    <p class="sec-next">
-      The hard part is learning actions from simulator runs that contain none.
-      <a href="#how">How the model does it</a>
+    <h3 class="sub-h">Two ideas, tested <em>on six continents</em>.</h3>
+    <p class="sub-lede">
+      The paper turns emulator training from passive input–output supervision into action-conditioned
+      state transitions, without a single labelled intervention. Its three contributions:
     </p>
-  </div>
-</section>
-
-<!-- ───────────────────────────────────────────────────────────── 03 the landscape -->
-<section class="sec" id="twin">
-  <div class="wrap">
-    <header class="sec-head">
-      <p class="kicker"><span>03</span>Digital twin</p>
-      <h2>Now, <em>a whole landscape</em>.</h2>
-      <p class="sec-lede">
-        256 forest cells of the western Amazon, where Brazil, Colombia and Peru meet, each one the
-        paper's model running live. Log a stretch of forest, set a fire, replant, then press play.
-      </p>
-    </header>
-
-    <div class="twin" id="twin-root" data-state="idle">
-      <div class="tw-view">
-        <canvas class="tw-canvas" id="tw-canvas" role="img"
-                aria-label="A 16 by 16 block of western Amazon forest cells on its satellite image; the trees follow the canopy height the model predicts for each"></canvas>
-        <div class="tw-labels" id="tw-labels" aria-hidden="true"></div>
-        <div class="tw-hud">
-          <div class="tw-where">
-            <div class="loc-wrap tw-loc">
-              <canvas class="loc" id="tw-globe" aria-hidden="true"></canvas>
-              <span class="loc-pin" id="tw-pin" aria-hidden="true"></span>
-            </div>
-            <p class="tw-place"><b>Western Amazon</b><span>2.5°N–5.5°S · 64.5–72.5°W</span></p>
-          </div>
-          <p class="tw-year" id="tw-year">2021</p>
-        </div>
-        <div class="tw-carbon">
-          <p class="tw-c-l">Carbon above ground, <span id="tw-c-year">2021</span></p>
-          <p class="tw-c-n" id="tw-c-total">…</p>
-          <p class="tw-c-d" id="tw-c-delta"></p>
-          <svg class="tw-c-chart" id="tw-c-chart" viewBox="0 0 200 48" preserveAspectRatio="none" aria-hidden="true"></svg>
-        </div>
-        <p class="tw-status" id="tw-status">Starts when you scroll here</p>
-        <div class="tw-views" role="group" aria-label="View">
-          <span class="tw-legend" id="tw-legend" hidden><i></i>lower · higher than no action</span>
-          <button type="button" data-view="map">Map</button>
-          <button type="button" data-view="forest">Forest</button>
-          <button type="button" data-view="change">Change</button>
-        </div>
-        <div class="tw-tip" id="tw-tip" hidden></div>
-      </div>
-
-      <div class="tw-bar">
-        <div class="tw-tools" id="tw-tools" role="group" aria-label="Paint an intervention"></div>
-        <div class="tw-opts">
-          <div class="tw-brush" role="group" aria-label="Brush">
-            <button type="button" data-brush="1">1 cell</button>
-            <button type="button" data-brush="3">3 × 3</button>
-          </div>
-          <label class="tw-when" id="tw-when">in <output id="tw-out-year">2001</output>
-            <input type="range" id="tw-year-in" min="5" max="40" value="20" step="1"></label>
-          <button class="btn btn-sm" id="tw-example" type="button">Example</button>
-          <button class="btn btn-sm" id="tw-clear" type="button">Clear</button>
-        </div>
-        <p class="tw-hint" id="tw-hint"></p>
-      </div>
-
-      <div class="tw-time">
-        <button class="tw-play" id="tw-play" type="button" aria-label="Play">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-play" d="M8 5v14l11-7Z"/><path class="i-pause" d="M7 5h4v14H7Zm6 0h4v14h-4Z"/></svg>
-        </button>
-        <input type="range" id="tw-scrub" min="0" max="40" value="40" step="0.01" aria-label="Year">
-        <span class="tw-span" aria-hidden="true"><i>1981</i><i>2021</i></span>
-      </div>
-    </div>
-    <p class="fine">
-      Each 0.5° cell (about 55 km) runs on its own, as in the paper: nothing spreads between cells.
-      Imagery: NASA Blue Marble. Rivers and towns: Natural Earth.
-    </p>
-  </div>
-</section>
-
-<!-- ───────────────────────────────────────────────────────────── 04 how -->
-<section class="sec" id="how">
-  <div class="wrap">
-    <header class="sec-head">
-      <p class="kicker"><span>04</span>How it works</p>
-      <h2>Two ideas, tested <em>on six continents</em>.</h2>
-      <p class="sec-lede">
-        The paper turns emulator training from passive input–output supervision into
-        action-conditioned state transitions, without a single labelled intervention.
-        Its three contributions:
-      </p>
-    </header>
 
     <ol class="contribs">
       <li class="contrib">
@@ -530,11 +524,11 @@
   </div>
 </section>
 
-<!-- ───────────────────────────────────────────────────────────── 05 results -->
+<!-- ───────────────────────────────────────────────────────────── 04 results -->
 <section class="sec" id="results">
   <div class="wrap">
     <header class="sec-head">
-      <p class="kicker"><span>05</span>Results</p>
+      <p class="kicker"><span>04</span>Results</p>
       <h2>Controllable, and <em>no less accurate</em>.</h2>
       <p class="sec-lede">
         Forty-year rollout error at held-out cells, over seven variables. The world model beats the
@@ -588,11 +582,11 @@
   </div>
 </section>
 
-<!-- ───────────────────────────────────────────────────────────── 06 paper -->
+<!-- ───────────────────────────────────────────────────────────── 05 paper -->
 <section class="sec" id="cite">
   <div class="wrap">
     <header class="sec-head">
-      <p class="kicker"><span>06</span>Paper</p>
+      <p class="kicker"><span>05</span>Paper</p>
       <h2>Earth System World Model for What-If Simulations</h2>
       <p class="sec-lede">A Case Study for Terrestrial Ecosystems. ACM SIGSPATIAL '26, Riverside, CA.</p>
     </header>

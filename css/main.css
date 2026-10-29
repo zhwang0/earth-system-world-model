@@ -723,53 +723,78 @@ input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 4px var(
 .disclose-body { padding: 0 var(--pad) var(--pad); max-width: 82ch; }
 .disclose-body p { color: var(--ink-2); font-size: var(--fs-sm); line-height: 1.7; }
 
-/* ------------------------------------------------------------------ 02 why */
-.whatif {
-  display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.3fr); align-items: center;
-  gap: 18px clamp(24px, 4vw, 56px);
-  margin: 0 0 14px;
-  padding: clamp(22px, 3vw, 40px);
-  border: 1px solid rgba(242, 153, 74, .38);
-  border-radius: var(--r-lg);
-  background:
-    radial-gradient(80% 120% at 100% 0%, rgba(242, 153, 74, .10), transparent 60%),
-    var(--bg-1);
-}
-.wf-k { margin: 0 0 10px; color: var(--ink-3); font: 500 var(--fs-micro)/1.3 var(--mono); letter-spacing: .14em; text-transform: uppercase; }
-.wf-q {
-  margin: 0;
-  color: var(--c-act);
-  font: italic 400 clamp(56px, 2rem + 4vw, 104px)/.95 var(--serif);
-  letter-spacing: -.01em;
-}
-.wf-t { margin: 18px 0 0; max-width: 40ch; color: var(--ink-2); font-size: var(--fs-md); line-height: 1.6; }
-.wf-figure { margin: 0; }
-.wf-fig { width: 100%; height: auto; overflow: visible; }
-.wf-fig path { fill: none; stroke-linecap: round; }
-.wf-ax { stroke: var(--line-2); stroke-width: 1; }
-.wf-yr { fill: var(--ink-3); font: 500 11px var(--mono); }
-.wf-hist { stroke: var(--ink-3); stroke-width: 3; }
-.wf-br { stroke-width: 3; stroke-dasharray: 1; stroke-dashoffset: 0; transition: stroke-dashoffset 1.1s var(--ease); }
-.wf-free { stroke: var(--c-free); stroke-dasharray: 1; }
-.wf-up { stroke: var(--c-gain); transition-delay: .55s; }
-.wf-burn { stroke: #e5533a; transition-delay: .7s; }
-.wf-log { stroke: var(--c-act); transition-delay: .85s; }
-.wf-free { transition-delay: .25s; }
-.whatif.rise:not(.in) .wf-br { stroke-dashoffset: 1; }
-.wf-now { fill: var(--ink); }
-.wf-ring { fill: none; stroke: var(--ink); stroke-width: 1.5; transform-box: fill-box; transform-origin: center; animation: wf-ring 2.4s var(--ease-out) infinite; }
-@keyframes wf-ring { from { transform: scale(1); opacity: .9; } to { transform: scale(3.2); opacity: 0; } }
-.wf-lab { font: 600 13px var(--sans); }
-.wf-lab-now { fill: var(--ink-2); font-weight: 500; font-size: 12px; }
-.wf-l-free { fill: var(--c-free); }
-.wf-l-up { fill: var(--c-gain); }
-.wf-l-burn { fill: #ff7a5c; }
-.wf-l-log { fill: var(--c-act); }
-.wf-key { display: flex; flex-wrap: wrap; gap: 6px 22px; margin-top: 10px; font-size: var(--fs-xs); color: var(--ink-2); }
-.wf-key span { display: inline-flex; align-items: center; gap: 8px; }
-.wf-key i { width: 18px; height: 3px; border-radius: 2px; }
-.k-free i { background: var(--c-free); }
-.k-act i { background: linear-gradient(90deg, var(--c-gain), #e5533a, var(--c-act)); }
+/* ------------------------------------------------------------------ 03 why, and how it works */
+/* the analogy, as the film opens on it: video and the Earth system (rows), watched or interacted
+   with (columns); three cells are what people know, the fourth is this paper */
+.anchor { position: absolute; top: 0; }
+.ana { display: grid; grid-template-columns: max-content minmax(0, 1fr) minmax(0, 1fr); gap: 12px 14px; margin: 0 0 14px; }
+.ana-col { grid-row: 1; display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0;
+  font: 650 var(--fs-h3)/1 var(--sans); letter-spacing: -.02em; }
+.ana-col svg { width: 1.05em; height: 1.05em; }
+.ana-col-w { grid-column: 2; color: var(--ink-2); }
+.ana-col-w svg { fill: currentColor; }
+.ana-col-i { grid-column: 3; color: var(--c-act); }
+.ana-col-i svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.ana-row { grid-column: 1; align-self: center; max-width: 7.5em; margin: 0 6px 0 0; text-align: right;
+  font: 650 var(--fs-h3)/1.15 var(--sans); letter-spacing: -.02em; color: var(--ink); }
+.ana-row-v { grid-row: 2; }
+.ana-row-e { grid-row: 3; }
+#ana-tl { grid-area: 2 / 2; }
+#ana-tr { grid-area: 2 / 3; }
+#ana-bl { grid-area: 3 / 2; }
+#ana-br { grid-area: 3 / 3; }
+.ana-cell { position: relative; aspect-ratio: 16 / 9; overflow: hidden; border: 1px solid var(--line-2);
+  border-radius: var(--r-lg); background: #050706; }
+.ana-cell::before { content: ""; position: absolute; inset: 0 0 auto; height: 34%; z-index: 1; pointer-events: none;
+  background: linear-gradient(180deg, rgba(0, 0, 0, .62), rgba(0, 0, 0, 0)); }
+.ana-walk, .ana-cell img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.ana-cell img { object-fit: cover; }
+.ana-t { position: absolute; left: 4%; top: 6.5%; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
+  margin: 0; font: 600 var(--fs-md)/1.2 var(--sans); color: var(--ink); text-shadow: 0 1px 10px rgba(0, 0, 0, .9); }
+.ana-t i { padding: 4px 9px; border-radius: 999px; background: var(--c-act); color: #140b03; text-shadow: none;
+  font: 600 var(--fs-micro)/1 var(--mono); font-style: normal; letter-spacing: .12em; text-transform: uppercase; }
+.ana-k { display: none; }
+.ana-l { position: absolute; bottom: 17%; z-index: 2; margin: 0; color: var(--ink-2); font-size: var(--fs-xs); text-shadow: 0 1px 8px #000; }
+.ana-l b { color: var(--ink); font-weight: 600; }
+.ana-l-w { left: 4%; }
+.ana-l-e { left: 54%; }
+/* a player's bar: all you can do with a video */
+.ana-bar { position: absolute; left: 4%; right: 4%; bottom: 5.5%; z-index: 2; display: flex; align-items: center; gap: 10px;
+  color: var(--ink-2); font: 500 var(--fs-micro)/1 var(--mono); text-shadow: 0 1px 6px #000; }
+.ana-bar svg { width: 14px; height: 14px; flex: none; fill: var(--ink); }
+.ana-tr { position: relative; flex: 1; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, .25); }
+.ana-fl { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 2px; background: var(--ink); }
+.ana-fl::after { content: ""; position: absolute; right: -5px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: var(--ink); }
+.ana-bar.is-done .ana-fl { width: 100%; }
+/* keys: what a world model adds */
+.ana-keys { position: absolute; left: 50%; bottom: 5%; z-index: 2; display: flex; gap: 8px; transform: translateX(-50%); }
+.ana-keys button { display: grid; place-items: center; width: 46px; height: 38px; padding: 0; border: 1.5px solid rgba(255, 255, 255, .45);
+  border-radius: 9px; background: rgba(8, 10, 9, .72); color: var(--ink); font: 600 20px/1 var(--sans); cursor: pointer;
+  transition: background .15s, border-color .15s, transform .1s; }
+.ana-keys button:hover { border-color: var(--c-act); }
+.ana-keys button.is-on { background: var(--c-act); border-color: var(--c-act); color: #140b03; transform: scale(.94); }
+#ana-tr:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+/* the fourth cell: the question, then this paper in its place */
+.ana-br { border: 2px dashed var(--line-3); background: transparent; transition: border-color .6s; }
+.ana-br::before { opacity: 0; transition: opacity .6s; }
+.ana-q, .ana-a { position: absolute; inset: 0; transition: opacity .7s var(--ease); }
+.ana-q { display: flex; align-items: center; gap: 6%; padding: 0 8%; }
+.ana-qm { margin: 0; color: var(--ink-3); font: italic 400 clamp(64px, 9vw, 150px)/1 var(--serif); }
+.ana-qs p { margin: 0; font: 650 var(--fs-h3)/1.25 var(--sans); letter-spacing: -.02em; color: var(--ink); }
+.ana-qs .ana-qw { margin-bottom: 4px; color: var(--c-act); font: italic 400 calc(var(--fs-h3) * 1.5)/1 var(--serif); letter-spacing: 0; }
+.ana-a { opacity: 0; }
+.ana-br.is-answered { border: 2px solid var(--c-act); box-shadow: 0 0 46px -10px rgba(242, 153, 74, .35); }
+.ana-br.is-answered::before { opacity: 1; }
+.ana-br.is-answered .ana-q { opacity: 0; }
+.ana-br.is-answered .ana-a { opacity: 1; }
+.ana-try { position: absolute; right: 4%; bottom: 6%; z-index: 2; font-size: var(--fs-xs); font-weight: 600; }
+.ana-try::after { content: " \2191"; }
+/* the cells come in once, in the film's order (analogy.js adds .is-in) */
+.ana-cell { opacity: 0; transform: translateY(14px); transition: opacity .7s var(--ease), transform .8s var(--ease), border-color .6s; }
+.ana-cell.is-in { opacity: 1; transform: none; }
+.sub-h { margin: clamp(56px, 7vw, 96px) 0 0; font-size: calc(var(--fs-h2) * .62); font-weight: 650; line-height: 1.1; letter-spacing: -.03em; }
+.sub-h em { color: var(--accent); font-size: 1.1em; }
+.sub-lede { margin: 14px 0 clamp(26px, 3.4vw, 40px); max-width: 60ch; color: var(--ink-2); font-size: var(--fs-md); line-height: 1.6; }
 
 .vs { padding: var(--pad); border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--bg-1); }
 .vs-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin: 0 0 18px; }
@@ -863,7 +888,7 @@ input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 4px var(
 }
 .vs-token svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-/* ------------------------------------------------------------------ 03 the landscape */
+/* ------------------------------------------------------------------ 02 the landscape */
 .tw-view {
   position: relative;
   height: clamp(460px, 54vw, 700px);
@@ -991,7 +1016,7 @@ input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 4px var(
 .tw-span i { font-style: normal; }
 .twin[data-state="failed"] .tw-bar, .twin[data-state="failed"] .tw-time { display: none; }
 
-/* ------------------------------------------------------------------ 04 how */
+/* ------------------------------------------------------------------ 03 how: the contributions */
 .contribs { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 0; padding: 0; }
 .contrib { display: flex; flex-direction: column; padding: clamp(18px, 2vw, 26px); border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--bg-1); }
 .cb-fig, .cb-map { width: 100%; margin: 0 0 18px; border-radius: var(--r); background: var(--chart-bg); border: 1px solid var(--line); }
@@ -1033,7 +1058,7 @@ input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 4px var(
 .fig img { width: 100%; padding: clamp(10px, 1.4vw, 20px); background: #fff; border-radius: var(--r-lg); filter: brightness(.94); }
 figcaption { margin-top: 12px; color: var(--ink-3); font-size: var(--fs-xs); line-height: 1.6; }
 
-/* ------------------------------------------------------------------ 05 results */
+/* ------------------------------------------------------------------ 04 results */
 .stat-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 0 0 14px; }
 .stat { padding: 22px; border-radius: var(--r-lg); }
 .stat-n { margin: 0; font: 600 var(--fs-num)/1 var(--sans); letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
@@ -1056,7 +1081,7 @@ figcaption { margin-top: 12px; color: var(--ink-3); font-size: var(--fs-xs); lin
 .tbl tbody tr.hi th[scope="row"], .tbl tbody tr.hi td b { color: var(--accent); }
 .tbl thead tr:first-child th:nth-child(3), .tbl .sub th:nth-child(5), .tbl tbody td:nth-child(5) { border-left: 1px solid var(--line); }
 
-/* ------------------------------------------------------------------ 06 paper */
+/* ------------------------------------------------------------------ 05 paper */
 .cite { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 14px 40px; align-items: start; }
 .cite-authors { margin: 0; color: var(--ink); font-size: var(--fs-md); line-height: 1.6; }
 .cite-aff { margin: 10px 0 0; color: var(--ink-3); font-size: var(--fs-sm); }
@@ -1092,6 +1117,12 @@ figcaption { margin-top: 12px; color: var(--ink-3); font-size: var(--fs-xs); lin
 @media (max-width: 760px) {
   :root { --nav-h: 54px; }
   .nav-links { display: none; }
+  /* the analogy stacks, row by row; each cell says which column it is from */
+  .ana { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .ana-col, .ana-row { display: none; }
+  #ana-tl, #ana-tr, #ana-bl, #ana-br { grid-area: auto; }
+  .ana-k { display: inline; color: var(--ink-2); font: 500 var(--fs-micro)/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+  #ana-tr .ana-k, #ana-br .ana-k { color: var(--c-act); }
 }
 @media (max-width: 560px) {
   .actions { gap: 8px; padding: 16px 16px 12px; }

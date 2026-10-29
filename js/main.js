@@ -127,6 +127,18 @@ async function start() {
 }
 
 function chrome() {
+  // the case for a world model, as the film opens on it: drawn live, so its world model can be steered
+  const ana = $('#ana');
+  if (ana) {
+    const io = new IntersectionObserver(async ([e]) => {
+      if (!e.isIntersecting) return;
+      io.disconnect();
+      const { Analogy } = await import('./analogy.js');
+      new Analogy(ana);
+    }, { rootMargin: '400px 0px' });
+    io.observe(ana);
+  }
+
   const nav = $('#nav');
   if (nav) {
     const io = new IntersectionObserver(([e]) => nav.classList.toggle('is-stuck', !e.isIntersecting),
