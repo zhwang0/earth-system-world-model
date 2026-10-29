@@ -26,10 +26,11 @@ named. Paint logging, fire, replanting or protection onto the board, cell by cel
 year; the edited cells re-run and the landscape plays forward, with its carbon totals.
 `tests.html` checks both against the paper's PyTorch code in your own browser.
 
-A one-minute film (`assets/film/`) plays right after the hero: an emulator lets you watch, this
-world model lets you interact (two disturbances, a carbon goal, a real-world landscape), and how it
-works, in the paper's three contributions. It was rendered frame by frame from this page's own
-model, forest and landscape, with a score generated in code.
+A one-minute film (`assets/film/`) plays right after the hero. It opens on why a world model:
+video generation and Earth emulators let you watch, a world model lets you interact, and the Earth
+system's interactive cell is the one this work fills. Then two disturbances, a carbon goal, logging
+across a real landscape, and how it works, in the paper's three contributions. It was rendered
+frame by frame with this page's own model, forest and landscape, with a score generated in code.
 
 ## Paper
 

@@ -6,11 +6,16 @@ node_modules/
 .env
 .env.*
 
-# Local only, never published: working notes, the export/build scripts (all but the
-# validator the deploy runs) and the staging copy the workflow assembles
+# Local only, never published: working notes and plans, the presenter's voice-over for the film,
+# the source material, the export/build scripts (all but the validator the deploy runs), any
+# publish helpers, and the staging copy the workflow assembles
 /NOTES.md
+/initial_plans.md
+/film-script.md
+/sources/
 /_work/
 /_site/
+/publish_to_github.sh
 /scripts/*
 !/scripts/validate_site.py
 
