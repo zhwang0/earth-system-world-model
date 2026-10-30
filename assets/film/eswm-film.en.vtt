@@ -1,0 +1,41 @@
+WEBVTT
+
+00:00:00.500 --> 00:00:04.150
+Video models can generate a world we watch.
+
+00:00:04.300 --> 00:00:08.350
+Earth emulators can forecast our weather and forest ecosystems.
+
+00:00:08.600 --> 00:00:13.050
+Now, we have video world models to let us interact.
+
+00:00:13.300 --> 00:00:16.550
+However, we cannot interact with Earth emulators.
+
+00:00:16.800 --> 00:00:20.550
+Our work proposes the Earth System World Model.
+
+00:00:21.300 --> 00:00:25.900
+When a wildfire happens, we can see what it takes.
+
+00:00:26.700 --> 00:00:32.100
+Want to reach a policy goal? We can plan the actions accordingly.
+
+00:00:32.700 --> 00:00:37.300
+Now, let’s move to a real place: the western Amazon.
+
+00:00:37.600 --> 00:00:42.300
+Let logging spread, and see how much carbon it costs.
+
+00:00:43.200 --> 00:00:47.750
+How does this work? Every observed change becomes an action.
+
+00:00:48.000 --> 00:00:51.750
+Edit one variable, and the model infers the rest.
+
+00:00:52.100 --> 00:00:59.100
+We test it on six regions and three forest conditions, and find no loss in performance.
+
+00:00:59.700 --> 00:01:04.300
+The Earth System World Model. Don’t just watch. Ask what if?
+
