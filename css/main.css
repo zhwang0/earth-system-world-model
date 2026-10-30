@@ -270,6 +270,21 @@ em {
   font-size: var(--fs-xs); line-height: 1.6;
 }
 .hero-by span { display: block; margin-top: 2px; color: var(--ink-3); }
+/* where to find the authors at the conference */
+.hero-conf {
+  align-self: flex-start; max-width: 100%;
+  margin: clamp(16px, 2.4vh, 22px) 0 0;
+  padding: 10px 16px 11px;
+  border: 1px solid var(--accent-line); border-radius: var(--r);
+  background: rgba(10, 14, 11, .74);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.hc-k { margin: 0 0 6px; color: var(--accent); font: 500 var(--fs-micro)/1.2 var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+.hc-list { display: grid; gap: 4px; margin: 0; }
+.hc-list div { display: grid; grid-template-columns: 4.6em minmax(0, 1fr); align-items: baseline; gap: 10px; }
+.hc-list dt { color: var(--ink-3); font: 500 var(--fs-micro)/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+.hc-list dd { margin: 0; color: var(--ink-2); font-size: var(--fs-sm); line-height: 1.45; }
+.hc-list dd b { color: var(--ink); font-weight: 600; }
 .hero-note {
   display: inline-flex; align-items: center; gap: 9px; align-self: flex-start;
   margin: clamp(16px, 2.4vh, 24px) 0 0;
@@ -1172,6 +1187,10 @@ figcaption { margin-top: 12px; color: var(--ink-3); font-size: var(--fs-xs); lin
 }
 @media (max-height: 700px) and (min-width: 861px) {
   .hero { padding-top: calc(var(--nav-h) + 20px); }
+}
+/* short laptop screens: the headline scales with the height, so the conference box stays on the first screen */
+@media (max-height: 800px) and (min-width: 861px) {
+  .hero h1 { max-width: 9em; font-size: min(var(--fs-h1), 8.6vh); }
 }
 @media (min-width: 1700px) {
   :root { --wrap: 1320px; }
