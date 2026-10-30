@@ -270,21 +270,32 @@ em {
   font-size: var(--fs-xs); line-height: 1.6;
 }
 .hero-by span { display: block; margin-top: 2px; color: var(--ink-3); }
-/* where to find the authors at the conference */
+/* where to find the authors at the conference: the first thing under the lede, lit in the accent */
 .hero-conf {
   align-self: flex-start; max-width: 100%;
-  margin: clamp(16px, 2.4vh, 22px) 0 0;
-  padding: 10px 16px 11px;
-  border: 1px solid var(--accent-line); border-radius: var(--r);
-  background: rgba(10, 14, 11, .74);
+  margin: clamp(18px, 2.6vh, 26px) 0 0;
+  padding: 14px 20px 15px;
+  border: 1.5px solid var(--accent); border-radius: var(--r);
+  background: linear-gradient(120deg, rgba(162, 207, 110, .17), rgba(162, 207, 110, .05) 70%), rgba(8, 12, 9, .84);
+  box-shadow: 0 16px 44px -20px rgba(162, 207, 110, .7);
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
 }
-.hc-k { margin: 0 0 6px; color: var(--accent); font: 500 var(--fs-micro)/1.2 var(--mono); letter-spacing: .14em; text-transform: uppercase; }
-.hc-list { display: grid; gap: 4px; margin: 0; }
-.hc-list div { display: grid; grid-template-columns: 4.6em minmax(0, 1fr); align-items: baseline; gap: 10px; }
-.hc-list dt { color: var(--ink-3); font: 500 var(--fs-micro)/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; }
-.hc-list dd { margin: 0; color: var(--ink-2); font-size: var(--fs-sm); line-height: 1.45; }
-.hc-list dd b { color: var(--ink); font-weight: 600; }
+.hc-k { display: flex; align-items: center; gap: 9px; margin: 0 0 10px; color: var(--accent);
+  font: 600 var(--fs-xs)/1.2 var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+.hc-k svg, .hc-list dt svg { flex: none; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.hc-list { display: grid; gap: 7px; margin: 0; }
+.hc-list div { display: grid; grid-template-columns: 6.4em minmax(0, 1fr); align-items: baseline; gap: 12px; }
+.hc-list dt { display: flex; align-items: center; gap: 8px; align-self: center; color: var(--moss-soft);
+  font: 600 var(--fs-xs)/1.3 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.hc-list dd { margin: 0; color: var(--ink); font-size: var(--fs-md); line-height: 1.4; }
+.hc-list dd b { font-weight: 650; }
+/* on a phone, the day and time get their own line */
+@media (max-width: 560px) {
+  .hero-conf { padding: 12px 16px 13px; }
+  .hc-list div { grid-template-columns: 5.4em minmax(0, 1fr); gap: 10px; }
+  .hc-sep { display: none; }
+  .hc-when { display: block; color: var(--ink-2); white-space: nowrap; }
+}
 .hero-note {
   display: inline-flex; align-items: center; gap: 9px; align-self: flex-start;
   margin: clamp(16px, 2.4vh, 24px) 0 0;
@@ -1187,6 +1198,8 @@ figcaption { margin-top: 12px; color: var(--ink-3); font-size: var(--fs-xs); lin
 }
 @media (max-height: 700px) and (min-width: 861px) {
   .hero { padding-top: calc(var(--nav-h) + 20px); }
+  .hero-conf { margin-top: 16px; padding: 11px 18px 12px; }
+  .hc-list { gap: 5px; }
 }
 /* short laptop screens: the headline scales with the height, so the conference box stays on the first screen */
 @media (max-height: 800px) and (min-width: 861px) {
